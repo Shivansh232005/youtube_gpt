@@ -18,7 +18,7 @@ for pkg, imp in [("rank_bm25", "rank_bm25"), ("sentence-transformers", "sentence
     except ImportError:
         install(pkg)
 
-from youtube_transcript_api import YouTubeTranscriptApi
+from youtube_transcript_api import YouTubeTranscriptApi, NoTranscriptFound, TranscriptsDisabled
 from langchain_community.embeddings import HuggingFaceEmbeddings
 from langchain_community.vectorstores import FAISS
 from langchain_core.documents import Document
@@ -160,49 +160,48 @@ def get_transcript(video_id, lang="auto"):
         return cached
     st.session_state.from_cache = False
 
-    # 2. Try YouTube captions
+    # 2. Try YouTube captions — uses new v1.x API (YouTubeTranscriptApi instance)
     try:
-        # list_transcripts() does not accept extra kwargs in youtube-transcript-api >= 0.6
-        transcript_list = YouTubeTranscriptApi.list_transcripts(video_id)
+        ytt = YouTubeTranscriptApi()
 
-        # Try native languages first, then English, then translate
+        # Build preferred language list
+        if lang != "auto" and lang != "en":
+            preferred_langs = [lang, "en"]
+        else:
+            preferred_langs = ["en", "hi", "gu", "ur", "ta", "te", "bn", "mr"]
+
         try:
-            if lang != "auto" and lang != "en":
-                transcript = transcript_list.find_transcript([lang, "en"])
-            else:
-                transcript = transcript_list.find_transcript(["en", "hi", "gu", "ur", "ta", "te", "bn", "mr"])
-        except Exception:
-            try:
-                first = next(iter(transcript_list))
-                transcript = first.translate("en")
-            except Exception:
-                raise
+            # fetch() directly tries languages in order
+            data = ytt.fetch(video_id, languages=preferred_langs)
+        except NoTranscriptFound:
+            # Fallback: list available transcripts, take first, translate to English
+            transcript_list = ytt.list(video_id)
+            first = next(iter(transcript_list))
+            data = first.translate("en").fetch()
 
-        data = transcript.fetch()
-
-        # In youtube-transcript-api >= 0.6, fetch() returns FetchedTranscript
-        # which is iterable and each element supports attribute AND dict-style access
+        # FetchedTranscript snippets expose .text, .start, .duration as attributes
         result = []
-        for e in data:
-            try:
-                # Attribute access (newer API)
-                result.append({"text": e.text, "start": e.start, "duration": getattr(e, "duration", 0)})
-            except AttributeError:
-                # Dict access (older API fallback)
-                result.append({"text": e["text"], "start": e["start"], "duration": e.get("duration", 0)})
+        for e in data.snippets:
+            result.append({
+                "text":     e.text,
+                "start":    e.start,
+                "duration": getattr(e, "duration", 0)
+            })
 
         save_cache(video_id, result)
         return result
 
+    except TranscriptsDisabled:
+        st.warning("⚡ YouTube captions are disabled for this video — switching to Whisper AI...")
+        return get_transcript_whisper(video_id, lang)
     except Exception as e:
         err = str(e).lower()
         if any(x in err for x in ["subtitles are disabled", "no transcript", "no element found",
                                     "too many requests", "429", "could not retrieve", "transcript disabled"]):
             st.warning("⚡ YouTube captions unavailable — switching to Whisper AI...")
-            return get_transcript_whisper(video_id, lang)
         else:
-            st.warning(f"Caption fetch issue ({str(e)[:80]}) — trying Whisper AI...")
-            return get_transcript_whisper(video_id, lang)
+            st.warning(f"Caption fetch issue ({str(e)[:120]}) — trying Whisper AI...")
+        return get_transcript_whisper(video_id, lang)
 
 # ── Transcript: Whisper fallback ──────────────────────────────────────────────
 def get_transcript_whisper(video_id, lang="auto"):
