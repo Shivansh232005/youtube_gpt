@@ -3,20 +3,8 @@ import re
 import os
 import json
 import warnings
-import subprocess
-import sys
 
 warnings.filterwarnings("ignore")
-
-# ── Auto-install missing packages ─────────────────────────────────────────────
-def install(pkg):
-    subprocess.check_call([sys.executable, "-m", "pip", "install", "-q", pkg])
-
-for pkg, imp in [("rank_bm25", "rank_bm25"), ("sentence-transformers", "sentence_transformers"), ("google-generativeai", "google.generativeai")]:
-    try:
-        __import__(imp)
-    except ImportError:
-        install(pkg)
 
 from youtube_transcript_api import YouTubeTranscriptApi, NoTranscriptFound, TranscriptsDisabled
 from langchain_community.embeddings import HuggingFaceEmbeddings
