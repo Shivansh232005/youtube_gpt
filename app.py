@@ -476,14 +476,14 @@ def get_ai_answer(question, docs, ai_mode, gemini_api_key, ollama_model, lang):
     ans, source, error = None, None, None
 
     if ai_mode in ["gemini", "both"]:
-        if gemini_api_key and gemini_api_key.strip().startswith("AIza"):
+        if gemini_api_key and (gemini_api_key.strip().startswith("AIza") or gemini_api_key.strip().startswith("AQ.")):
             ans, info = gemini_answer(question, docs, gemini_api_key.strip(), lang)
             if ans:
                 source = "Gemini 1.5 Flash"
             else:
                 error = info
         else:
-            error = "Invalid or missing Gemini API key (should start with AIza...)"
+            error = "Invalid or missing Gemini API key (should start with AIza... or AQ...)"
 
     if ans is None and ai_mode in ["ollama", "both"]:
         ans, info = ollama_answer(question, docs, ollama_model, lang)
@@ -664,7 +664,7 @@ def main():
             gemini_api_key = st.text_input(
                 "Gemini API Key",
                 type="password",
-                placeholder="AIzaSy...",
+                placeholder="AIzaSy... or AQ...",
                 help="Free key at aistudio.google.com"
             )
             if not gemini_api_key:
