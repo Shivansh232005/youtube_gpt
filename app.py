@@ -162,14 +162,8 @@ def get_transcript(video_id, lang="auto"):
 
     # 2. Try YouTube captions
     try:
-        current_dir = os.path.dirname(os.path.abspath(__file__))
-        cookie_path = os.path.join(current_dir, "cookies.txt")
-
-        kwargs = {}
-        if os.path.exists(cookie_path):
-            kwargs["cookies"] = cookie_path
-
-        transcript_list = YouTubeTranscriptApi.list_transcripts(video_id, **kwargs)
+        # list_transcripts() does not accept extra kwargs in youtube-transcript-api >= 0.6
+        transcript_list = YouTubeTranscriptApi.list_transcripts(video_id)
 
         # Try native languages first, then English, then translate
         try:
@@ -185,7 +179,18 @@ def get_transcript(video_id, lang="auto"):
                 raise
 
         data = transcript.fetch()
-        result = [{"text": e["text"], "start": e["start"], "duration": e.get("duration", 0)} for e in data]
+
+        # In youtube-transcript-api >= 0.6, fetch() returns FetchedTranscript
+        # which is iterable and each element supports attribute AND dict-style access
+        result = []
+        for e in data:
+            try:
+                # Attribute access (newer API)
+                result.append({"text": e.text, "start": e.start, "duration": getattr(e, "duration", 0)})
+            except AttributeError:
+                # Dict access (older API fallback)
+                result.append({"text": e["text"], "start": e["start"], "duration": e.get("duration", 0)})
+
         save_cache(video_id, result)
         return result
 
@@ -213,22 +218,34 @@ def get_transcript_whisper(video_id, lang="auto"):
 
         progress = st.progress(0, text="📥 Downloading audio...")
 
-        # ── yt-dlp options (robust, no JS runtime needed) ──
+        # ── yt-dlp options ──────────────────────────────────────────────────
         ydl_opts = {
-    "format": "worstaudio/bestaudio/best",
-    "outtmpl": audio_file,
-    "quiet": False,        # 👈 True se False karo
-    "no_warnings": False,  # 👈 False karo
-    "ignoreerrors": False,
-    "http_headers": {
-        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"
-    },
-}
+            "format": "worstaudio/bestaudio/best",
+            "outtmpl": audio_file + ".%(ext)s",   # force extension in filename
+            "quiet": True,
+            "no_warnings": True,
+            "ignoreerrors": False,
+            "socket_timeout": 30,
+            "http_headers": {
+                "User-Agent": (
+                    "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
+                    "AppleWebKit/537.36 (KHTML, like Gecko) "
+                    "Chrome/120.0.0.0 Safari/537.36"
+                )
+            },
+            # Convert to mp3 so Whisper always gets a supported format
+            "postprocessors": [{
+                "key": "FFmpegExtractAudio",
+                "preferredcodec": "mp3",
+                "preferredquality": "64",
+            }],
+        }
         if os.path.exists(cookie_path):
             ydl_opts["cookiefile"] = cookie_path
 
-        # Try download — attempt 1: worstaudio (no JS required usually)
+        # Try download — attempt each format in order
         downloaded = None
+        last_error = ""
         for fmt in ["worstaudio/bestaudio", "bestaudio/best", "best"]:
             try:
                 ydl_opts["format"] = fmt
@@ -240,19 +257,31 @@ def get_transcript_whisper(video_id, lang="auto"):
                         pass
 
                 with yt_dlp.YoutubeDL(ydl_opts) as ydl:
-                    ydl.download([url])
+                    info = ydl.extract_info(url, download=True)
+                    if info is None:
+                        raise Exception("yt-dlp returned no info (video may be private or age-restricted)")
 
-                matches = glob.glob(f"{audio_file}*")  # remove the dot — match with OR without extension
-                matches = [f for f in matches if os.path.isfile(f)]  # only files, not folders
+                # After postprocessor, file will be .mp3
+                matches = glob.glob(f"{audio_file}*.mp3")
+                if not matches:
+                    matches = glob.glob(f"{audio_file}*")
+                matches = [f for f in matches if os.path.isfile(f)]
 
                 if matches:
                     downloaded = matches[0]
                     break
-            except Exception:
+            except Exception as dl_err:
+                last_error = str(dl_err)
                 continue
 
         if not downloaded:
-            st.error("❌ Audio download failed. Please check your internet connection or try a different video.")
+            st.error(
+                f"❌ Audio download failed. This usually means:\n"
+                f"- The video is age-restricted or private\n"
+                f"- YouTube is blocking downloads in this environment (common on Streamlit Cloud)\n"
+                f"- Try adding a `cookies.txt` file next to app.py (export from your browser)\n\n"
+                f"**Technical detail:** {last_error[:200] if last_error else 'No output files found'}"
+            )
             return None
 
         progress.progress(45, text="🎙️ Transcribing with Whisper AI...")
