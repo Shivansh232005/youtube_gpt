@@ -3,8 +3,24 @@ import re
 import os
 import json
 import warnings
+import subprocess
+import sys
 
 warnings.filterwarnings("ignore")
+
+# ── Auto-install missing packages ─────────────────────────────────────────────
+def _install(pkg):
+    subprocess.check_call([sys.executable, "-m", "pip", "install", "-q", pkg])
+
+try:
+    from google import genai as _genai_check
+except (ImportError, Exception):
+    _install("google-genai")
+
+try:
+    from rank_bm25 import BM25Okapi as _bm25_check
+except ImportError:
+    _install("rank-bm25")
 
 from youtube_transcript_api import YouTubeTranscriptApi, NoTranscriptFound, TranscriptsDisabled
 from langchain_community.embeddings import HuggingFaceEmbeddings
@@ -449,7 +465,11 @@ Give a helpful, well-structured answer:"""
 # ── Gemini API answer ─────────────────────────────────────────────────────────
 def gemini_answer(question, docs, api_key, lang="auto", gemini_model="gemini-2.5-flash"):
     try:
-        from google import genai
+        try:
+            from google import genai
+        except ImportError:
+            subprocess.check_call([sys.executable, "-m", "pip", "install", "-q", "google-genai"])
+            from google import genai
         client = genai.Client(api_key=api_key)
         prompt = build_prompt(question, docs, lang)
         response = client.models.generate_content(
