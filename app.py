@@ -447,13 +447,15 @@ USER QUESTION: {question}
 Give a helpful, well-structured answer:"""
 
 # ── Gemini API answer ─────────────────────────────────────────────────────────
-def gemini_answer(question, docs, api_key, lang="auto"):
+def gemini_answer(question, docs, api_key, lang="auto", gemini_model="gemini-2.5-flash"):
     try:
-        import google.generativeai as genai
-        genai.configure(api_key=api_key)
-        model  = genai.GenerativeModel("gemini-1.5-flash")
+        from google import genai
+        client = genai.Client(api_key=api_key)
         prompt = build_prompt(question, docs, lang)
-        response = model.generate_content(prompt)
+        response = client.models.generate_content(
+            model=gemini_model,
+            contents=prompt,
+        )
         return response.text, "gemini"
     except Exception as e:
         return None, str(e)
@@ -472,14 +474,14 @@ def ollama_answer(question, docs, model_name="llama3", lang="auto"):
         return None, str(e)
 
 # ── Smart AI: Gemini first, Ollama fallback ───────────────────────────────────
-def get_ai_answer(question, docs, ai_mode, gemini_api_key, ollama_model, lang):
+def get_ai_answer(question, docs, ai_mode, gemini_api_key, gemini_model, ollama_model, lang):
     ans, source, error = None, None, None
 
     if ai_mode in ["gemini", "both"]:
         if gemini_api_key and (gemini_api_key.strip().startswith("AIza") or gemini_api_key.strip().startswith("AQ.")):
-            ans, info = gemini_answer(question, docs, gemini_api_key.strip(), lang)
+            ans, info = gemini_answer(question, docs, gemini_api_key.strip(), lang, gemini_model)
             if ans:
-                source = "Gemini 1.5 Flash"
+                source = gemini_model
             else:
                 error = info
         else:
@@ -495,7 +497,7 @@ def get_ai_answer(question, docs, ai_mode, gemini_api_key, ollama_model, lang):
     return ans, source, error
 
 # ── Build result HTML ─────────────────────────────────────────────────────────
-def build_results(results, video_id, question, ai_mode, gemini_api_key, ollama_model, min_match, lang="auto"):
+def build_results(results, video_id, question, ai_mode, gemini_api_key, gemini_model, ollama_model, min_match, lang="auto"):
     # Filter by min_match — fixed score formula
     filtered = []
     for doc, score in results:
@@ -517,7 +519,7 @@ def build_results(results, video_id, question, ai_mode, gemini_api_key, ollama_m
         with st.spinner("🤖 Generating AI answer..."):
             ans, source, error = get_ai_answer(
                 question, [d for d, _ in filtered],
-                ai_mode, gemini_api_key, ollama_model, lang
+                ai_mode, gemini_api_key, gemini_model, ollama_model, lang
             )
         if ans:
             badge_color = "#4ade80" if "Gemini" in (source or "") else "#a78bfa"
@@ -660,12 +662,23 @@ def main():
         )
 
         gemini_api_key = ""
+        gemini_model   = "gemini-2.5-flash"
         if ai_mode in ["gemini", "both"]:
             gemini_api_key = st.text_input(
                 "Gemini API Key",
                 type="password",
                 placeholder="AIzaSy... or AQ...",
                 help="Free key at aistudio.google.com"
+            )
+            gemini_model = st.selectbox(
+                "Gemini Model",
+                ["gemini-3.5-flash", "gemini-2.5-flash", "gemini-2.5-flash-lite"],
+                format_func=lambda x: {
+                    "gemini-3.5-flash":      "🚀 Gemini 3.5 Flash (Newest, Free)",
+                    "gemini-2.5-flash":      "⚡ Gemini 2.5 Flash (Stable, Free)",
+                    "gemini-2.5-flash-lite": "💡 Gemini 2.5 Flash-Lite (Fastest, Free)",
+                }[x],
+                label_visibility="collapsed"
             )
             if not gemini_api_key:
                 st.markdown(
@@ -730,6 +743,7 @@ def main():
                     prompt,
                     ai_mode=ai_mode,
                     gemini_api_key=gemini_api_key,
+                    gemini_model=gemini_model,
                     ollama_model=ollama_model,
                     min_match=min_match,
                     lang=st.session_state.get("lang_sel", "auto")
