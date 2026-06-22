@@ -12,7 +12,7 @@ warnings.filterwarnings("ignore")
 def install(pkg):
     subprocess.check_call([sys.executable, "-m", "pip", "install", "-q", pkg])
 
-for pkg, imp in [("rank_bm25", "rank_bm25"), ("sentence-transformers", "sentence_transformers")]:
+for pkg, imp in [("rank_bm25", "rank_bm25"), ("sentence-transformers", "sentence_transformers"), ("google-generativeai", "google.generativeai")]:
     try:
         __import__(imp)
     except ImportError:
@@ -417,59 +417,134 @@ def rerank(question, results, top_k=5):
         return results[:top_k]
 
 # ── Ollama AI answer ──────────────────────────────────────────────────────────
+# ── Language instruction helper ───────────────────────────────────────────────
+def get_lang_instruction(lang):
+    if lang in ["hi", "gu", "ur", "bn", "mr", "ta", "te"]:
+        return (
+            "Reply in Hinglish ONLY — mix Hindi and English naturally, "
+            "like: 'Is video mein bataya gaya hai ki...' "
+            "Do NOT reply in pure Hindi or pure English."
+        )
+    elif lang == "auto":
+        return (
+            "If the transcript is in Hindi/Indian language, reply in Hinglish "
+            "(Hindi + English mix). If English transcript, reply in English."
+        )
+    else:
+        return "Reply in English only."
+
+# ── Smart system prompt ───────────────────────────────────────────────────────
+def build_prompt(question, docs, lang):
+    context = "\n\n".join(
+        f"[Timestamp {d.metadata['timestamp_range']}]:\n{d.page_content}"
+        for d in docs
+    )
+    lang_instruction = get_lang_instruction(lang)
+    return f"""You are an expert video assistant — like ChatGPT but specialized for YouTube videos.
+
+{lang_instruction}
+
+Your job:
+- Give clear, detailed, easy-to-understand answers based on the video transcript
+- Use simple language, like explaining to a friend
+- Use bullet points or numbered steps when explaining concepts
+- Mention timestamps when relevant so user can jump to that part
+- If something is not in the transcript, say so honestly
+
+VIDEO TRANSCRIPT:
+{context}
+
+USER QUESTION: {question}
+
+Give a helpful, well-structured answer:"""
+
+# ── Gemini API answer ─────────────────────────────────────────────────────────
+def gemini_answer(question, docs, api_key, lang="auto"):
+    try:
+        import google.generativeai as genai
+        genai.configure(api_key=api_key)
+        model  = genai.GenerativeModel("gemini-1.5-flash")
+        prompt = build_prompt(question, docs, lang)
+        response = model.generate_content(prompt)
+        return response.text, "gemini"
+    except Exception as e:
+        return None, str(e)
+
+# ── Ollama answer ─────────────────────────────────────────────────────────────
 def ollama_answer(question, docs, model_name="llama3", lang="auto"):
     try:
         import ollama
-        context = "\n\n".join(f"[{d.metadata['timestamp_range']}]: {d.page_content}" for d in docs)
-        
-        # Language instruction
-        if lang in ["hi", "gu", "ur", "bn", "mr", "ta", "te"]:
-           lang_instruction = (
-                "Reply in Hinglish ONLY — mix Hindi and English naturally, "
-                "like: 'Is video mein bataya gaya hai ki...' "
-                "Do NOT reply in pure Hindi or pure English."
-            )
-        elif lang == "auto":
-            lang_instruction = (
-                 "If the transcript is in Hindi/Indian language, reply in Hinglish "
-                 "(Hindi + English mix). If English transcript, reply in English."
-            )
-        else:
-            lang_instruction = "Reply in English only."
-      
+        prompt = build_prompt(question, docs, lang)
         response = ollama.chat(
             model=model_name,
-            messages=[{"role": "user", "content":
-                f"You are a helpful assistant. {lang_instruction}\n"
-                f"Answer using ONLY the transcript below.\n"
-                f"If not covered, say 'Not found in transcript.'\n\n"
-                f"Transcript:\n{context}\n\nQuestion: {question}\nAnswer:"}]
+            messages=[{"role": "user", "content": prompt}]
         )
-        return response["message"]["content"]
-    except Exception:
-        return None
+        return response["message"]["content"], "ollama"
+    except Exception as e:
+        return None, str(e)
+
+# ── Smart AI: Gemini first, Ollama fallback ───────────────────────────────────
+def get_ai_answer(question, docs, ai_mode, gemini_api_key, ollama_model, lang):
+    ans, source, error = None, None, None
+
+    if ai_mode in ["gemini", "both"]:
+        if gemini_api_key and gemini_api_key.strip().startswith("AIza"):
+            ans, info = gemini_answer(question, docs, gemini_api_key.strip(), lang)
+            if ans:
+                source = "Gemini 1.5 Flash"
+            else:
+                error = info
+        else:
+            error = "Invalid or missing Gemini API key (should start with AIza...)"
+
+    if ans is None and ai_mode in ["ollama", "both"]:
+        ans, info = ollama_answer(question, docs, ollama_model, lang)
+        if ans:
+            source = f"Ollama ({ollama_model})"
+        elif not error:
+            error = info
+
+    return ans, source, error
 
 # ── Build result HTML ─────────────────────────────────────────────────────────
-def build_results(results, video_id, question, use_ollama, ollama_model, min_match, lang="auto"):
-    # Filter by min_match
+def build_results(results, video_id, question, ai_mode, gemini_api_key, ollama_model, min_match, lang="auto"):
+    # Filter by min_match — fixed score formula
     filtered = []
     for doc, score in results:
-        rel = max(0, min(100, (1 - score / 2) * 100))
+        rel = max(0, min(100, (1 - score) * 100))
         if rel >= min_match:
             filtered.append((doc, rel))
 
+    # If nothing passes threshold, take top 3 anyway
     if not filtered:
-        msg = "No segments found above your match threshold. Try lowering the Min Match % slider."
-        return msg, msg
+        if results:
+            filtered = [(doc, max(0, min(100, (1 - score) * 100))) for doc, score in results[:3]]
+        else:
+            msg = "No segments found. Try a different question or lower the Min Match % slider."
+            return msg, msg
 
-    # Ollama answer
+    # AI answer
     ai_html, ai_plain = "", ""
-    if use_ollama:
+    if ai_mode != "none":
         with st.spinner("🤖 Generating AI answer..."):
-            ans = ollama_answer(question, [d for d, _ in filtered], ollama_model, lang=lang)
+            ans, source, error = get_ai_answer(
+                question, [d for d, _ in filtered],
+                ai_mode, gemini_api_key, ollama_model, lang
+            )
         if ans:
-            ai_html  = f'<div class="ai-box"><div class="ai-label">🤖 AI Answer</div><div class="ai-text">{ans}</div></div>'
-            ai_plain = f"**AI Answer:**\n{ans}\n\n"
+            badge_color = "#4ade80" if "Gemini" in (source or "") else "#a78bfa"
+            ai_html  = (
+                f'<div class="ai-box">'
+                f'<div class="ai-label">🤖 AI Answer '
+                f'<span style="color:{badge_color};font-size:0.6rem;margin-left:6px">▶ {source}</span>'
+                f'</div>'
+                f'<div class="ai-text">{ans}</div>'
+                f'</div>'
+            )
+            ai_plain = f"**AI Answer ({source}):**\n{ans}\n\n"
+        elif error:
+            ai_html  = f'<div style="color:#f87171;font-size:0.8rem;margin-bottom:0.7rem">⚠️ AI Error: {error[:120]}</div>'
+            ai_plain = f"AI Error: {error[:120]}\n\n"
 
     # Segment cards
     html  = ai_html + f'<div style="font-family:Syne,sans-serif;font-size:0.65rem;font-weight:700;letter-spacing:0.12em;text-transform:uppercase;color:#475569;padding-bottom:0.5rem;border-bottom:1px solid rgba(255,255,255,0.05);margin-bottom:0.7rem">📍 {len(filtered)} Relevant Segments</div>'
@@ -580,14 +655,46 @@ def main():
         st.session_state.lang_sel = lang_sel
         st.markdown("</div>", unsafe_allow_html=True)
 
-        # Ollama
+        # AI Settings
         st.markdown('<div class="section-box">', unsafe_allow_html=True)
-        st.markdown('<div class="section-label">🤖 AI Answers (Ollama)</div>', unsafe_allow_html=True)
-        use_ollama  = st.checkbox("Enable AI answers (requires Ollama locally)", value=False)
+        st.markdown('<div class="section-label">🤖 AI Answer Settings</div>', unsafe_allow_html=True)
+
+        ai_mode = st.selectbox(
+            "ai_mode",
+            ["gemini", "both", "ollama", "none"],
+            format_func=lambda x: {
+                "gemini": "✨ Gemini API (Free, Best Quality)",
+                "both":   "🔄 Gemini + Ollama (Gemini first, Ollama fallback)",
+                "ollama": "💻 Ollama Only (Local, No internet)",
+                "none":   "❌ No AI Answer"
+            }[x],
+            label_visibility="collapsed"
+        )
+
+        gemini_api_key = ""
+        if ai_mode in ["gemini", "both"]:
+            gemini_api_key = st.text_input(
+                "Gemini API Key",
+                type="password",
+                placeholder="AIzaSy...",
+                help="Free key at aistudio.google.com"
+            )
+            if not gemini_api_key:
+                st.markdown(
+                    '<div style="color:#f59e0b;font-size:0.75rem;margin-top:4px">'
+                    '🔑 <a href="https://aistudio.google.com/app/apikey" target="_blank" '
+                    'style="color:#4ade80">Get FREE Gemini API key here</a></div>',
+                    unsafe_allow_html=True
+                )
+
         ollama_model = "llama3"
-        if use_ollama:
-            ollama_model = st.selectbox("model", ["llama3", "mistral", "llama3.2", "phi3", "gemma2"],
-                                        label_visibility="collapsed")
+        if ai_mode in ["ollama", "both"]:
+            ollama_model = st.selectbox(
+                "model",
+                ["llama3", "mistral", "llama3.2", "phi3", "gemma2"],
+                label_visibility="collapsed"
+            )
+
         st.markdown("</div>", unsafe_allow_html=True)
 
         # Min match slider
@@ -633,7 +740,8 @@ def main():
                     reranked,
                     st.session_state.v_id,
                     prompt,
-                    use_ollama=use_ollama,
+                    ai_mode=ai_mode,
+                    gemini_api_key=gemini_api_key,
                     ollama_model=ollama_model,
                     min_match=min_match,
                     lang=st.session_state.get("lang_sel", "auto")
