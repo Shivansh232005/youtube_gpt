@@ -881,14 +881,14 @@ def main():
                 if secret_key:
                     st.markdown(
                         '<div style="background:rgba(74,222,128,0.08);border:0.5px solid '
-                        'rgba(74,222,128,0.2);border-radius:6px;padding:5px 8px;font-size:0.72rem;color:#4ade80">'
+                        'rgba(74,222,128,0.2);border-radius:6px;padding:5px 8px;font-size:0.72rem;color:#4ade80;margin-bottom:8px">'
                         '🔑 API key loaded automatically ✓</div>',
                         unsafe_allow_html=True
                     )
                 else:
                     gemini_api_key = st.text_input(
                         "Gemini API Key", type="password",
-                        placeholder="AIzaSy...",
+                        placeholder="AIzaSy... or AQ...",
                         help="Free at aistudio.google.com",
                         key="gemini_key_input"
                     )
@@ -899,6 +899,7 @@ def main():
                             unsafe_allow_html=True
                         )
                 # Gemini model selector
+                st.markdown('<span class="slabel">🧠 Gemini Model</span>', unsafe_allow_html=True)
                 gemini_model = st.selectbox(
                     "gemini_model",
                     ["gemini-2.5-flash", "gemini-2.5-flash-lite"],
