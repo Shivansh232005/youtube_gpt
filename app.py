@@ -3,24 +3,8 @@ import re
 import os
 import json
 import warnings
-import subprocess
-import sys
 
 warnings.filterwarnings("ignore")
-
-# ── Auto-install missing packages ─────────────────────────────────────────────
-def _install(pkg):
-    subprocess.check_call([sys.executable, "-m", "pip", "install", "-q", pkg])
-
-try:
-    from google import genai as _genai_check
-except (ImportError, Exception):
-    _install("google-genai")
-
-try:
-    from rank_bm25 import BM25Okapi as _bm25_check
-except ImportError:
-    _install("rank-bm25")
 
 from youtube_transcript_api import YouTubeTranscriptApi, NoTranscriptFound, TranscriptsDisabled
 from langchain_community.embeddings import HuggingFaceEmbeddings
@@ -44,73 +28,121 @@ html, body, [data-testid="stAppViewContainer"], [data-testid="stApp"] {
 }
 #MainMenu, footer, header, [data-testid="stToolbar"],
 [data-testid="stDecoration"], [data-testid="stStatusWidget"] { display: none !important; }
-.block-container { padding: 1.5rem 2.5rem 4rem !important; max-width: 1500px !important; }
+.block-container { padding: 0 !important; max-width: 100% !important; }
+[data-testid="stHorizontalBlock"] { gap: 0 !important; }
 
-/* Hero */
-.hero { text-align: center; padding: 2rem 0 1.5rem; }
-.hero-badge { display: inline-block; background: rgba(56,189,248,0.1); border: 1px solid rgba(56,189,248,0.25); color: #38bdf8; font-size: 0.7rem; font-weight: 700; letter-spacing: 0.18em; text-transform: uppercase; padding: 0.3rem 1rem; border-radius: 100px; margin-bottom: 0.8rem; }
-.hero h1 { font-family: 'Syne', sans-serif !important; font-size: clamp(2rem, 4.5vw, 3.2rem) !important; font-weight: 800 !important; background: linear-gradient(135deg, #f8fafc 20%, #38bdf8 60%, #818cf8 100%); -webkit-background-clip: text !important; -webkit-text-fill-color: transparent !important; background-clip: text !important; margin-bottom: 0.5rem !important; }
-.hero p { color: #64748b; font-size: 0.95rem; }
-.divider { height: 1px; background: linear-gradient(90deg,transparent,rgba(56,189,248,0.15),transparent); margin: 0.5rem 0 1.5rem; }
+/* ── Top navbar ── */
+.navbar { display: flex; align-items: center; justify-content: space-between; padding: 0.65rem 1.5rem; border-bottom: 1px solid rgba(255,255,255,0.06); background: rgba(7,9,15,0.95); position: sticky; top: 0; z-index: 100; backdrop-filter: blur(10px); }
+.nav-brand { font-family: 'Syne',sans-serif; font-size: 1.15rem; font-weight: 800; background: linear-gradient(135deg,#38bdf8,#818cf8); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; }
+.nav-badges { display: flex; gap: 0.5rem; }
+.nav-badge { background: rgba(56,189,248,0.08); border: 1px solid rgba(56,189,248,0.18); color: #7dd3fc; font-size: 0.62rem; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; padding: 0.2rem 0.7rem; border-radius: 100px; }
+.nav-badge.green { background: rgba(74,222,128,0.08); border-color: rgba(74,222,128,0.2); color: #4ade80; }
 
-/* Cards & Labels */
-.card { background: rgba(255,255,255,0.025); border: 1px solid rgba(255,255,255,0.07); border-radius: 14px; padding: 1.2rem; }
-.field-label { font-family: 'Syne',sans-serif; font-size: 0.68rem; font-weight: 700; letter-spacing: 0.14em; text-transform: uppercase; color: #38bdf8; margin-bottom: 0.4rem; display: block; }
-.section-box { background: rgba(99,102,241,0.06); border: 1px solid rgba(99,102,241,0.15); border-radius: 10px; padding: 0.8rem 1rem; margin-top: 0.7rem; }
-.section-label { font-family: 'Syne',sans-serif; font-size: 0.65rem; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase; color: #818cf8; margin-bottom: 0.3rem; }
-.chat-label { font-family: 'Syne',sans-serif; font-size: 0.65rem; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase; color: #475569; padding-bottom: 0.5rem; border-bottom: 1px solid rgba(255,255,255,0.05); margin-bottom: 0.7rem; }
+/* ── Layout panels ── */
+.left-panel { padding: 1rem 1rem 1rem 1.2rem; border-right: 1px solid rgba(255,255,255,0.05); height: calc(100vh - 52px); overflow-y: auto; display: flex; flex-direction: column; gap: 0.7rem; }
+.right-panel { padding: 0; height: calc(100vh - 52px); display: flex; flex-direction: column; }
 
-/* Input */
-[data-testid="stTextInput"] > div > div > input { background: rgba(255,255,255,0.04) !important; border: 1px solid rgba(255,255,255,0.09) !important; border-radius: 9px !important; color: #e2e8f0 !important; font-family: 'DM Sans',sans-serif !important; font-size: 0.9rem !important; padding: 0.65rem 1rem !important; }
+/* ── Tabs ── */
+.tab-bar { display: flex; border-bottom: 1px solid rgba(255,255,255,0.06); padding: 0 1rem; }
+.tab-btn { padding: 0.55rem 1rem; font-size: 0.78rem; font-weight: 600; color: #475569; border: none; background: none; cursor: pointer; border-bottom: 2px solid transparent; transition: all 0.2s; font-family: 'Syne',sans-serif; letter-spacing: 0.04em; }
+.tab-btn.active { color: #38bdf8; border-bottom-color: #38bdf8; }
+
+/* ── Video box ── */
+.video-placeholder { background: rgba(255,255,255,0.02); border: 1px solid rgba(255,255,255,0.07); border-radius: 12px; aspect-ratio: 16/9; display: flex; align-items: center; justify-content: center; color: #1e293b; font-size: 0.8rem; }
+[data-testid="stVideo"] { border-radius: 12px !important; overflow: hidden !important; }
+[data-testid="stVideo"] iframe { border-radius: 12px !important; }
+
+/* ── Section boxes ── */
+.sbox { background: rgba(99,102,241,0.05); border: 1px solid rgba(99,102,241,0.12); border-radius: 10px; padding: 0.75rem 0.9rem; }
+.slabel { font-family: 'Syne',sans-serif; font-size: 0.62rem; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase; color: #818cf8; margin-bottom: 0.45rem; display: block; }
+.flabel { font-family: 'Syne',sans-serif; font-size: 0.62rem; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase; color: #38bdf8; margin-bottom: 0.35rem; display: block; }
+
+/* ── Process btn & inputs ── */
+[data-testid="stTextInput"] > div > div > input { background: rgba(255,255,255,0.04) !important; border: 1px solid rgba(255,255,255,0.09) !important; border-radius: 8px !important; color: #e2e8f0 !important; font-size: 0.85rem !important; padding: 0.55rem 0.9rem !important; }
 [data-testid="stTextInput"] > div > div > input:focus { border-color: rgba(56,189,248,0.4) !important; box-shadow: 0 0 0 3px rgba(56,189,248,0.06) !important; }
 [data-testid="stTextInput"] label { display: none !important; }
-
-/* Button */
-[data-testid="stButton"] > button { width: 100% !important; background: linear-gradient(135deg, #0ea5e9, #6366f1) !important; color: white !important; border: none !important; border-radius: 9px !important; padding: 0.65rem 1.5rem !important; font-family: 'Syne',sans-serif !important; font-size: 0.85rem !important; font-weight: 700 !important; letter-spacing: 0.06em !important; margin-top: 0.4rem !important; transition: all 0.2s !important; }
-[data-testid="stButton"] > button:hover { transform: translateY(-1px) !important; box-shadow: 0 6px 20px rgba(14,165,233,0.3) !important; }
-
-/* Status pills */
-.pill-ready { display: inline-flex; align-items: center; gap: 0.35rem; background: rgba(16,185,129,0.1); border: 1px solid rgba(16,185,129,0.25); color: #10b981; font-size: 0.72rem; font-weight: 500; padding: 0.25rem 0.7rem; border-radius: 100px; margin-top: 0.6rem; }
-.pill-cache { display: inline-flex; align-items: center; gap: 0.35rem; background: rgba(245,158,11,0.1); border: 1px solid rgba(245,158,11,0.25); color: #f59e0b; font-size: 0.72rem; font-weight: 500; padding: 0.25rem 0.7rem; border-radius: 100px; margin-top: 0.3rem; }
-
-/* Selectbox & Checkbox */
+[data-testid="stButton"] > button { width: 100% !important; background: linear-gradient(135deg,#0ea5e9,#6366f1) !important; color: white !important; border: none !important; border-radius: 8px !important; padding: 0.6rem 1rem !important; font-family: 'Syne',sans-serif !important; font-size: 0.82rem !important; font-weight: 700 !important; letter-spacing: 0.06em !important; margin-top: 0.35rem !important; }
+[data-testid="stButton"] > button:hover { filter: brightness(1.1) !important; }
+.pill-ready { display: inline-flex; align-items: center; gap: 0.3rem; background: rgba(16,185,129,0.1); border: 1px solid rgba(16,185,129,0.2); color: #10b981; font-size: 0.7rem; padding: 0.2rem 0.6rem; border-radius: 100px; margin-top: 0.4rem; }
+.pill-cache { display: inline-flex; align-items: center; gap: 0.3rem; background: rgba(245,158,11,0.1); border: 1px solid rgba(245,158,11,0.2); color: #f59e0b; font-size: 0.7rem; padding: 0.2rem 0.6rem; border-radius: 100px; }
 [data-testid="stSelectbox"] label { display: none !important; }
 [data-testid="stSelectbox"] > div > div { background: rgba(255,255,255,0.04) !important; border: 1px solid rgba(255,255,255,0.08) !important; border-radius: 8px !important; color: #e2e8f0 !important; }
-[data-testid="stCheckbox"] label { color: #94a3b8 !important; font-size: 0.86rem !important; }
-[data-testid="stSlider"] label { color: #94a3b8 !important; font-size: 0.82rem !important; }
+[data-testid="stSlider"] label { color: #64748b !important; font-size: 0.78rem !important; }
 
-/* Chat */
+/* ── History sidebar — ChatGPT style ── */
+.hist-panel-label { font-size: 0.6rem; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase; color: #334155; padding: 0.5rem 0.6rem 0.4rem; display: block; }
+.hist-section-date { font-size: 0.6rem; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: #1e293b; padding: 0.5rem 0.6rem 0.2rem; display: block; }
+.hist-item { display: block; padding: 0.4rem 0.6rem; border-radius: 7px; cursor: pointer; transition: background 0.15s; margin-bottom: 1px; text-decoration: none; }
+.hist-item:hover { background: rgba(255,255,255,0.05); }
+.hist-item.active { background: rgba(56,189,248,0.07); }
+.hist-title { font-size: 0.78rem; color: #94a3b8; font-weight: 400; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; line-height: 1.4; }
+.hist-item.active .hist-title { color: #e2e8f0; }
+.hist-empty { color: #1e293b; font-size: 0.78rem; text-align: center; padding: 2rem 0.5rem; line-height: 1.8; }
+
+/* ── Chat area ── */
+.chat-scroll { flex: 1; overflow-y: auto; padding: 1rem 1.2rem; }
 [data-testid="stChatMessage"] { background: transparent !important; border: none !important; padding: 0 !important; margin-bottom: 0.8rem !important; }
-[data-testid="stChatMessage"]:has([data-testid="chatAvatarIcon-user"]) { background: rgba(14,165,233,0.07) !important; border: 1px solid rgba(14,165,233,0.13) !important; border-radius: 11px !important; padding: 0.75rem 1rem !important; }
-[data-testid="stChatMessage"]:has([data-testid="chatAvatarIcon-assistant"]) { background: rgba(255,255,255,0.025) !important; border: 1px solid rgba(255,255,255,0.06) !important; border-radius: 11px !important; padding: 0.75rem 1rem !important; }
-[data-testid="stChatMessage"] p, [data-testid="stChatMessage"] strong { color: #e2e8f0 !important; font-family: 'DM Sans',sans-serif !important; font-size: 0.88rem !important; line-height: 1.7 !important; }
-[data-testid="stChatInput"] { background: rgba(255,255,255,0.04) !important; border: 1px solid rgba(255,255,255,0.09) !important; border-radius: 11px !important; }
-[data-testid="stChatInput"] textarea { background: transparent !important; color: #e2e8f0 !important; font-family: 'DM Sans',sans-serif !important; }
+[data-testid="stChatMessage"]:has([data-testid="chatAvatarIcon-user"]) { background: rgba(14,165,233,0.07) !important; border: 1px solid rgba(14,165,233,0.12) !important; border-radius: 11px !important; padding: 0.7rem 1rem !important; }
+[data-testid="stChatMessage"]:has([data-testid="chatAvatarIcon-assistant"]) { background: rgba(255,255,255,0.02) !important; border: 1px solid rgba(255,255,255,0.05) !important; border-radius: 11px !important; padding: 0.7rem 1rem !important; }
+[data-testid="stChatMessage"] p { color: #e2e8f0 !important; font-size: 0.88rem !important; line-height: 1.7 !important; }
+[data-testid="stChatInput"] { background: rgba(255,255,255,0.03) !important; border: 1px solid rgba(255,255,255,0.08) !important; border-radius: 10px !important; margin: 0 1rem 0.8rem !important; }
+[data-testid="stChatInput"] textarea { color: #e2e8f0 !important; }
+.chat-empty { color: #1e293b; font-size: 0.9rem; text-align: center; padding: 3rem 2rem; }
+.chat-empty-icon { font-size: 2.5rem; margin-bottom: 0.8rem; }
 
-/* Segment cards */
-.seg-card { background: rgba(255,255,255,0.02); border: 1px solid rgba(255,255,255,0.07); border-left: 3px solid #0ea5e9; border-radius: 0 10px 10px 0; padding: 0.8rem 1rem; margin-bottom: 0.6rem; }
-.seg-meta { display: flex; align-items: center; gap: 0.45rem; margin-bottom: 0.4rem; flex-wrap: wrap; }
-.seg-num { font-family: 'Syne',sans-serif; font-size: 0.62rem; font-weight: 700; color: #334155; text-transform: uppercase; letter-spacing: 0.1em; }
-.ts-pill { background: rgba(14,165,233,0.12); border: 1px solid rgba(14,165,233,0.2); color: #38bdf8; font-size: 0.7rem; font-weight: 500; padding: 0.1rem 0.5rem; border-radius: 5px; text-decoration: none; }
+/* ── AI answer box ── */
+.ai-box { background: linear-gradient(135deg,rgba(74,222,128,0.06),rgba(14,165,233,0.03)); border: 1px solid rgba(74,222,128,0.18); border-radius: 12px; padding: 1rem 1.1rem; margin-bottom: 0.8rem; }
+.ai-label { font-family: 'Syne',sans-serif; font-size: 0.6rem; font-weight: 700; letter-spacing: 0.14em; text-transform: uppercase; color: #4ade80; margin-bottom: 0.45rem; display: flex; align-items: center; gap: 0.45rem; }
+.ai-badge { background: rgba(74,222,128,0.1); border: 1px solid rgba(74,222,128,0.2); color: #4ade80; font-size: 0.6rem; padding: 0.1rem 0.5rem; border-radius: 100px; }
+.ai-text { color: #cbd5e1; font-size: 0.88rem; line-height: 1.8; }
+
+/* ── Segment cite tags (Perplexity style) ── */
+.cite-tag { display: inline-flex; align-items: center; gap: 3px; background: rgba(14,165,233,0.1); border: 1px solid rgba(14,165,233,0.2); color: #38bdf8; font-size: 0.65rem; font-weight: 600; padding: 0.05rem 0.45rem; border-radius: 4px; cursor: pointer; text-decoration: none; vertical-align: middle; margin: 0 2px; }
+.cite-tag:hover { background: rgba(14,165,233,0.2); }
+
+/* ── Segment cards ── */
+.seg-section { margin-top: 0.6rem; border-top: 1px solid rgba(255,255,255,0.05); padding-top: 0.6rem; }
+.seg-header { font-family: 'Syne',sans-serif; font-size: 0.6rem; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase; color: #334155; margin-bottom: 0.5rem; }
+.seg-card { background: rgba(255,255,255,0.02); border: 1px solid rgba(255,255,255,0.05); border-left: 2px solid rgba(14,165,233,0.5); border-radius: 0 10px 10px 0; padding: 0.7rem 0.9rem; margin-bottom: 0.5rem; }
+.seg-meta { display: flex; align-items: center; gap: 0.4rem; margin-bottom: 0.35rem; flex-wrap: wrap; }
+.seg-num { font-family: 'Syne',sans-serif; font-size: 0.58rem; font-weight: 700; color: #334155; text-transform: uppercase; }
+.ts-pill { background: rgba(14,165,233,0.1); border: 1px solid rgba(14,165,233,0.2); color: #38bdf8; font-size: 0.65rem; font-weight: 500; padding: 0.1rem 0.5rem; border-radius: 5px; text-decoration: none; }
 .ts-pill:hover { background: rgba(14,165,233,0.2); }
-.match-high { background: rgba(16,185,129,0.1); border: 1px solid rgba(16,185,129,0.2); color: #34d399; font-size: 0.66rem; font-weight: 600; padding: 0.1rem 0.5rem; border-radius: 5px; }
-.match-mid  { background: rgba(245,158,11,0.1);  border: 1px solid rgba(245,158,11,0.2);  color: #fbbf24; font-size: 0.66rem; font-weight: 600; padding: 0.1rem 0.5rem; border-radius: 5px; }
-.match-low  { background: rgba(239,68,68,0.1);   border: 1px solid rgba(239,68,68,0.18);  color: #f87171; font-size: 0.66rem; font-weight: 600; padding: 0.1rem 0.5rem; border-radius: 5px; }
-.seg-text { color: #94a3b8; font-size: 0.84rem; line-height: 1.7; }
+.match-high { background: rgba(16,185,129,0.1); border: 1px solid rgba(16,185,129,0.2); color: #34d399; font-size: 0.62rem; font-weight: 600; padding: 0.1rem 0.5rem; border-radius: 5px; }
+.match-mid  { background: rgba(245,158,11,0.1); border: 1px solid rgba(245,158,11,0.2); color: #fbbf24; font-size: 0.62rem; font-weight: 600; padding: 0.1rem 0.5rem; border-radius: 5px; }
+.match-low  { background: rgba(239,68,68,0.1); border: 1px solid rgba(239,68,68,0.18); color: #f87171; font-size: 0.62rem; font-weight: 600; padding: 0.1rem 0.5rem; border-radius: 5px; }
+.seg-text { color: #64748b; font-size: 0.82rem; line-height: 1.7; }
 
-/* AI Answer */
-.ai-box { background: linear-gradient(135deg,rgba(99,102,241,0.08),rgba(14,165,233,0.05)); border: 1px solid rgba(99,102,241,0.2); border-radius: 11px; padding: 0.9rem 1.1rem; margin-bottom: 0.9rem; }
-.ai-label { font-family: 'Syne',sans-serif; font-size: 0.62rem; font-weight: 700; letter-spacing: 0.14em; text-transform: uppercase; color: #818cf8; margin-bottom: 0.4rem; }
-.ai-text { color: #cbd5e1; font-size: 0.88rem; line-height: 1.75; }
-
-/* Progress & misc */
+/* ── Misc ── */
 [data-testid="stProgress"] > div > div { background: linear-gradient(90deg,#0ea5e9,#6366f1) !important; }
-::-webkit-scrollbar { width: 4px; } ::-webkit-scrollbar-track { background: transparent; } ::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.08); border-radius: 10px; }
-[data-testid="stHorizontalBlock"] { gap: 2rem !important; }
-[data-testid="stVideo"], iframe { border-radius: 11px !important; border: 1px solid rgba(255,255,255,0.07) !important; margin-top: 0.7rem !important; }
-[data-testid="stAlert"] { border-radius: 9px !important; font-family: 'DM Sans',sans-serif !important; font-size: 0.84rem !important; }
+::-webkit-scrollbar { width: 3px; } ::-webkit-scrollbar-track { background: transparent; } ::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.07); border-radius: 10px; }
+[data-testid="stAlert"] { border-radius: 8px !important; font-size: 0.83rem !important; }
 </style>
 """, unsafe_allow_html=True)
+
+# ── History helpers ────────────────────────────────────────────────────────────
+HISTORY_FILE = os.path.join(os.path.dirname(os.path.abspath(__file__)), ".search_history.json")
+
+def load_history():
+    try:
+        if os.path.exists(HISTORY_FILE):
+            with open(HISTORY_FILE, "r", encoding="utf-8") as f:
+                return json.load(f)
+    except Exception:
+        pass
+    return []
+
+def save_history(entry):
+    history = load_history()
+    # Remove duplicate video_id entries, keep latest
+    history = [h for h in history if h.get("video_id") != entry["video_id"]]
+    history.insert(0, entry)
+    history = history[:20]  # keep last 20
+    try:
+        with open(HISTORY_FILE, "w", encoding="utf-8") as f:
+            json.dump(history, f, ensure_ascii=False)
+    except Exception:
+        pass
 
 # ── Cache dir ─────────────────────────────────────────────────────────────────
 CACHE_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), ".transcript_cache")
@@ -463,19 +495,13 @@ USER QUESTION: {question}
 Give a helpful, well-structured answer:"""
 
 # ── Gemini API answer ─────────────────────────────────────────────────────────
-def gemini_answer(question, docs, api_key, lang="auto", gemini_model="gemini-2.5-flash"):
+def gemini_answer(question, docs, api_key, lang="auto"):
     try:
-        try:
-            from google import genai
-        except ImportError:
-            subprocess.check_call([sys.executable, "-m", "pip", "install", "-q", "google-genai"])
-            from google import genai
-        client = genai.Client(api_key=api_key)
+        import google.generativeai as genai
+        genai.configure(api_key=api_key)
+        model  = genai.GenerativeModel("gemini-1.5-flash")
         prompt = build_prompt(question, docs, lang)
-        response = client.models.generate_content(
-            model=gemini_model,
-            contents=prompt,
-        )
+        response = model.generate_content(prompt)
         return response.text, "gemini"
     except Exception as e:
         return None, str(e)
@@ -494,18 +520,18 @@ def ollama_answer(question, docs, model_name="llama3", lang="auto"):
         return None, str(e)
 
 # ── Smart AI: Gemini first, Ollama fallback ───────────────────────────────────
-def get_ai_answer(question, docs, ai_mode, gemini_api_key, gemini_model, ollama_model, lang):
+def get_ai_answer(question, docs, ai_mode, gemini_api_key, ollama_model, lang):
     ans, source, error = None, None, None
 
     if ai_mode in ["gemini", "both"]:
-        if gemini_api_key and (gemini_api_key.strip().startswith("AIza") or gemini_api_key.strip().startswith("AQ.")):
-            ans, info = gemini_answer(question, docs, gemini_api_key.strip(), lang, gemini_model)
+        if gemini_api_key and len(gemini_api_key.strip()) > 10:
+            ans, info = gemini_answer(question, docs, gemini_api_key.strip(), lang)
             if ans:
-                source = gemini_model
+                source = "Gemini 1.5 Flash"
             else:
                 error = info
         else:
-            error = "Invalid or missing Gemini API key (should start with AIza... or AQ...)"
+            error = "Invalid or missing Gemini API key"
 
     if ans is None and ai_mode in ["ollama", "both"]:
         ans, info = ollama_answer(question, docs, ollama_model, lang)
@@ -517,7 +543,7 @@ def get_ai_answer(question, docs, ai_mode, gemini_api_key, gemini_model, ollama_
     return ans, source, error
 
 # ── Build result HTML ─────────────────────────────────────────────────────────
-def build_results(results, video_id, question, ai_mode, gemini_api_key, gemini_model, ollama_model, min_match, lang="auto"):
+def build_results(results, video_id, question, ai_mode, gemini_api_key, ollama_model, min_match, lang="auto"):
     # Filter by min_match — fixed score formula
     filtered = []
     for doc, score in results:
@@ -539,7 +565,7 @@ def build_results(results, video_id, question, ai_mode, gemini_api_key, gemini_m
         with st.spinner("🤖 Generating AI answer..."):
             ans, source, error = get_ai_answer(
                 question, [d for d, _ in filtered],
-                ai_mode, gemini_api_key, gemini_model, ollama_model, lang
+                ai_mode, gemini_api_key, ollama_model, lang
             )
         if ans:
             badge_color = "#4ade80" if "Gemini" in (source or "") else "#a78bfa"
@@ -586,14 +612,351 @@ def build_results(results, video_id, question, ai_mode, gemini_api_key, gemini_m
 
 # ── MAIN ──────────────────────────────────────────────────────────────────────
 def main():
+    # ── Navbar ────────────────────────────────────────────────────────────────
     st.markdown("""
-    <div class="hero">
-        <div class="hero-badge">🎬 Local AI · No API Key · Fully Private</div>
-        <h1>VidSearch AI</h1>
-        <p>Semantic search + AI answers for any YouTube video</p>
+    <div class="navbar">
+        <div class="nav-brand">🎬 VidSearch AI</div>
+        <div class="nav-badges">
+            <span class="nav-badge">⚡ Gemini AI</span>
+            <span class="nav-badge">🔍 Semantic Search</span>
+            <span class="nav-badge green">● Free</span>
+        </div>
     </div>
-    <div class="divider"></div>
     """, unsafe_allow_html=True)
+
+    # ── Session state init ─────────────────────────────────────────────────────
+    defaults = {
+        "messages":    [],
+        "vectorstore": None,
+        "bm25":        None,
+        "docs":        [],
+        "v_id":        None,
+        "from_cache":  False,
+        "active_tab":  "setup",
+        "lang_sel":    "auto",
+    }
+    for k, v in defaults.items():
+        if k not in st.session_state:
+            st.session_state[k] = v
+
+    # ── 3-column layout: History | Video+Setup | Chat ─────────────────────────
+    hist_col, left_col, right_col = st.columns([0.85, 1.4, 2], gap="small")
+
+    # ══════════════════════════════════════════════════════════════════════════
+    # HISTORY SIDEBAR
+    # ══════════════════════════════════════════════════════════════════════════
+    with hist_col:
+        st.markdown('<div class="left-panel">', unsafe_allow_html=True)
+        st.markdown('<span class="hist-panel-label">VidSearch AI</span>', unsafe_allow_html=True)
+
+        history = load_history()
+        if not history:
+            st.markdown('<div class="hist-empty">No history yet.<br>Process a video to get started.</div>', unsafe_allow_html=True)
+        else:
+            if st.button("🗑", key="clear_hist", help="Clear all history"):
+                try:
+                    if os.path.exists(HISTORY_FILE):
+                        os.remove(HISTORY_FILE)
+                    st.rerun()
+                except Exception:
+                    pass
+
+            import datetime
+            today     = datetime.datetime.now().strftime("%d %b")
+            yesterday = (datetime.datetime.now() - datetime.timedelta(days=1)).strftime("%d %b")
+
+            groups = {}
+            for h in history:
+                ts = h.get("timestamp", "")
+                date_part = ts.split(",")[0].strip() if "," in ts else ts.strip()
+                if date_part == today:
+                    grp = "Today"
+                elif date_part == yesterday:
+                    grp = "Yesterday"
+                else:
+                    grp = "Older"
+                groups.setdefault(grp, []).append(h)
+
+            for grp_name in ["Today", "Yesterday", "Older"]:
+                if grp_name not in groups:
+                    continue
+                st.markdown(f'<span class="hist-section-date">{grp_name}</span>', unsafe_allow_html=True)
+
+                for i, h in enumerate(groups[grp_name]):
+                    vid    = h.get("video_id", "")
+                    title  = h.get("title", vid)
+                    is_active = vid == st.session_state.get("v_id", "")
+
+                    if "youtube.com" in title or "youtu.be" in title:
+                        display = vid
+                    else:
+                        display = title
+
+                    active_cls = "active" if is_active else ""
+                    st.markdown(f"""
+                    <div class="hist-item {active_cls}">
+                        <div class="hist-title">🎬 {display[:38]}{"…" if len(display)>38 else ""}</div>
+                    </div>
+                    """, unsafe_allow_html=True)
+
+                    if st.button("↩", key=f"hist_{grp_name}_{i}_{vid}", help=f"Load: {display[:30]}"):
+                        lang_sel = st.session_state.get("lang_sel", "auto")
+                        with st.spinner("Loading..."):
+                            raw = get_transcript(vid, lang=lang_sel)
+                        if raw:
+                            docs = process_transcript(raw)
+                            st.session_state.vectorstore = build_vectorstore(docs)
+                            st.session_state.bm25        = build_bm25(docs)
+                            st.session_state.docs        = docs
+                            st.session_state.v_id        = vid
+                            st.session_state.messages    = []
+                            st.rerun()
+
+        st.markdown('</div>', unsafe_allow_html=True)
+
+    # ══════════════════════════════════════════════════════════════════════════
+    # LEFT PANEL — Video Player + Tabbed Setup/Settings
+    # ══════════════════════════════════════════════════════════════════════════
+    with left_col:
+        st.markdown('<div class="left-panel">', unsafe_allow_html=True)
+
+        # ── Embedded YouTube player ──────────────────────────────────────────
+        if st.session_state.v_id:
+            st.video(f"https://www.youtube.com/watch?v={st.session_state.v_id}")
+            if st.session_state.from_cache:
+                st.markdown('<div class="pill-cache">⚡ Loaded from cache</div>', unsafe_allow_html=True)
+        else:
+            st.markdown("""
+            <div class="video-placeholder">
+                <div style="text-align:center">
+                    <div style="font-size:2rem;margin-bottom:0.5rem">🎬</div>
+                    <div style="color:#334155;font-size:0.8rem">Video will appear here after processing</div>
+                </div>
+            </div>
+            """, unsafe_allow_html=True)
+
+        # ── Tabs: Video Setup | Settings ────────────────────────────────────
+        tab1, tab2 = st.tabs(["⚙️ Video Setup", "🛠 Settings"])
+
+        with tab1:
+            st.markdown('<span class="flabel">YouTube URL</span>', unsafe_allow_html=True)
+            url = st.text_input("url", placeholder="https://youtube.com/watch?v=...", label_visibility="collapsed")
+
+            if st.button("⚡ Process Video"):
+                if not url.strip():
+                    st.warning("Please enter a YouTube URL.")
+                else:
+                    try:
+                        v_id = extract_video_id(url.strip())
+                    except ValueError as e:
+                        st.error(str(e))
+                        v_id = None
+
+                    if v_id:
+                        lang_sel = st.session_state.get("lang_sel", "auto")
+                        with st.spinner("Fetching transcript..."):
+                            raw = get_transcript(v_id, lang=lang_sel)
+                        if raw:
+                            with st.spinner("Building search index..."):
+                                docs = process_transcript(raw)
+                                st.session_state.vectorstore = build_vectorstore(docs)
+                                st.session_state.bm25        = build_bm25(docs)
+                                st.session_state.docs        = docs
+                                st.session_state.v_id        = v_id
+                                st.session_state.messages    = []
+
+                            # Save to history
+                            import datetime
+                            save_history({
+                                "video_id":  v_id,
+                                "title":     url.strip(),
+                                "timestamp": datetime.datetime.now().strftime("%d %b, %H:%M"),
+                                "last_query": ""
+                            })
+                            st.rerun()
+
+            if st.session_state.vectorstore:
+                st.markdown('<div class="pill-ready">● Ready to search</div>', unsafe_allow_html=True)
+
+        with tab2:
+            # Language
+            st.markdown('<div class="sbox">', unsafe_allow_html=True)
+            st.markdown('<span class="slabel">🌐 Video Language</span>', unsafe_allow_html=True)
+            lang_map = {
+                "auto": "🔍 Auto Detect", "en": "🇬🇧 English",
+                "hi": "🇮🇳 Hindi",       "gu": "🇮🇳 Gujarati",
+                "ur": "🇵🇰 Urdu",        "ta": "🇮🇳 Tamil",
+                "te": "🇮🇳 Telugu",      "bn": "🇧🇩 Bengali",
+                "mr": "🇮🇳 Marathi",
+            }
+            lang_sel = st.selectbox("lang", list(lang_map.keys()),
+                                    format_func=lambda x: lang_map[x],
+                                    label_visibility="collapsed")
+            st.session_state.lang_sel = lang_sel
+            st.markdown('</div>', unsafe_allow_html=True)
+
+            # AI Settings
+            st.markdown('<div class="sbox" style="margin-top:0.6rem">', unsafe_allow_html=True)
+            st.markdown('<span class="slabel">🤖 AI Model</span>', unsafe_allow_html=True)
+            ai_mode = st.selectbox(
+                "ai_mode",
+                ["gemini", "both", "ollama", "none"],
+                format_func=lambda x: {
+                    "gemini": "✨ Gemini API (Free, Best)",
+                    "both":   "🔄 Gemini + Ollama Fallback",
+                    "ollama": "💻 Ollama Only (Local)",
+                    "none":   "❌ Disabled"
+                }[x],
+                label_visibility="collapsed"
+            )
+            # Auto-load from Streamlit secrets if available
+            secret_key = st.secrets.get("GEMINI_API_KEY", "") if hasattr(st, "secrets") else ""
+
+            gemini_api_key = secret_key  # default to secret
+            if ai_mode in ["gemini", "both"]:
+                if secret_key:
+                    st.markdown(
+                        '<div style="background:rgba(74,222,128,0.08);border:0.5px solid '
+                        'rgba(74,222,128,0.2);border-radius:6px;padding:5px 8px;font-size:0.72rem;color:#4ade80">'
+                        '🔑 API key loaded automatically ✓</div>',
+                        unsafe_allow_html=True
+                    )
+                else:
+                    gemini_api_key = st.text_input(
+                        "Gemini API Key", type="password",
+                        placeholder="AIzaSy...",
+                        help="Free at aistudio.google.com"
+                    )
+                    if not gemini_api_key:
+                        st.markdown(
+                            '🔑 <a href="https://aistudio.google.com/app/apikey" target="_blank" '
+                            'style="color:#4ade80;font-size:0.75rem">Get FREE key →</a>',
+                            unsafe_allow_html=True
+                        )
+            ollama_model = "llama3"
+            if ai_mode in ["ollama", "both"]:
+                ollama_model = st.selectbox("model",
+                    ["llama3", "mistral", "llama3.2", "phi3", "gemma2"],
+                    label_visibility="collapsed")
+            st.markdown('</div>', unsafe_allow_html=True)
+
+            # Min match slider
+            st.markdown('<br>', unsafe_allow_html=True)
+            min_match = st.slider("Min match % to show results", 0, 60, 10, 5)
+
+        # Store settings in session for chat to use
+        st.session_state["_ai_mode"]        = ai_mode if "ai_mode" in dir() else "gemini"
+        st.session_state["_gemini_api_key"] = gemini_api_key if "gemini_api_key" in dir() else ""
+        st.session_state["_ollama_model"]   = ollama_model if "ollama_model" in dir() else "llama3"
+        st.session_state["_min_match"]      = min_match if "min_match" in dir() else 10
+
+        st.markdown('</div>', unsafe_allow_html=True)
+
+    # ══════════════════════════════════════════════════════════════════════════
+    # RIGHT PANEL — Chat
+    # ══════════════════════════════════════════════════════════════════════════
+    with right_col:
+        st.markdown('<div class="right-panel">', unsafe_allow_html=True)
+        st.markdown('<div class="chat-scroll">', unsafe_allow_html=True)
+
+        # Chat header
+        st.markdown("""
+        <div style="display:flex;align-items:center;justify-content:space-between;
+             padding-bottom:0.6rem;border-bottom:1px solid rgba(255,255,255,0.05);margin-bottom:0.8rem">
+            <span style="font-family:'Syne',sans-serif;font-size:0.65rem;font-weight:700;
+                  letter-spacing:0.12em;text-transform:uppercase;color:#475569">
+                💬 Ask About The Video
+            </span>
+            <span style="font-size:0.65rem;color:#1e293b">
+                Powered by Gemini 1.5 Flash
+            </span>
+        </div>
+        """, unsafe_allow_html=True)
+
+        chat_area = st.container()
+
+        with chat_area:
+            if not st.session_state.messages:
+                st.markdown("""
+                <div class="chat-empty">
+                    <div class="chat-empty-icon">🎯</div>
+                    <div style="color:#334155;font-size:0.9rem;font-weight:600">Process a video to start</div>
+                    <div style="color:#1e293b;font-size:0.78rem;margin-top:0.5rem">
+                        Paste a YouTube URL → Process → Ask anything!
+                    </div>
+                </div>
+                """, unsafe_allow_html=True)
+            else:
+                for m in st.session_state.messages:
+                    with st.chat_message(m["role"]):
+                        if m["role"] == "assistant":
+                            st.markdown(m.get("html", m["content"]), unsafe_allow_html=True)
+                        else:
+                            st.markdown(m["content"])
+
+        st.markdown('</div>', unsafe_allow_html=True)
+
+        # Chat input
+        if prompt := st.chat_input("Ask anything about the video..."):
+            if not st.session_state.vectorstore:
+                st.error("⚠️ Please process a video first.")
+            else:
+                # Retrieve settings from session
+                _ai_mode        = st.session_state.get("_ai_mode", "gemini")
+                _gemini_api_key = st.session_state.get("_gemini_api_key", "")
+                _ollama_model   = st.session_state.get("_ollama_model", "llama3")
+                _min_match      = st.session_state.get("_min_match", 10)
+
+                st.session_state.messages.append({"role": "user", "content": prompt})
+                with chat_area:
+                    with st.chat_message("user"):
+                        st.markdown(prompt)
+
+                with st.spinner("Searching..."):
+                    raw_results = hybrid_search(
+                        st.session_state.vectorstore,
+                        st.session_state.bm25,
+                        st.session_state.docs,
+                        prompt, k=8
+                    )
+                    reranked = rerank(prompt, raw_results, top_k=6)
+
+                html, plain = build_results(
+                    reranked,
+                    st.session_state.v_id,
+                    prompt,
+                    ai_mode=_ai_mode,
+                    gemini_api_key=_gemini_api_key,
+                    ollama_model=_ollama_model,
+                    min_match=_min_match,
+                    lang=st.session_state.get("lang_sel", "auto")
+                )
+
+                st.session_state.messages.append({"role": "assistant", "content": plain, "html": html})
+                with chat_area:
+                    with st.chat_message("assistant"):
+                        st.markdown(html, unsafe_allow_html=True)
+
+                # Update history with last query
+                if st.session_state.v_id:
+                    history = load_history()
+                    for h in history:
+                        if h.get("video_id") == st.session_state.v_id:
+                            h["last_query"] = prompt
+                            break
+                    try:
+                        with open(HISTORY_FILE, "w", encoding="utf-8") as f:
+                            json.dump(history, f, ensure_ascii=False)
+                    except Exception:
+                        pass
+
+                st.rerun()
+
+        st.markdown('</div>', unsafe_allow_html=True)
+
+if __name__ == "__main__":
+    main()
+
 
     # Session state init
     defaults = {
@@ -681,32 +1044,32 @@ def main():
             label_visibility="collapsed"
         )
 
-        gemini_api_key = ""
-        gemini_model   = "gemini-2.5-flash"
+        # Auto-load from Streamlit secrets if available
+        secret_key = st.secrets.get("GEMINI_API_KEY", "") if hasattr(st, "secrets") else ""
+
+        gemini_api_key = secret_key
         if ai_mode in ["gemini", "both"]:
-            gemini_api_key = st.text_input(
-                "Gemini API Key",
-                type="password",
-                placeholder="AIzaSy... or AQ...",
-                help="Free key at aistudio.google.com"
-            )
-            gemini_model = st.selectbox(
-                "Gemini Model",
-                ["gemini-3.5-flash", "gemini-2.5-flash", "gemini-2.5-flash-lite"],
-                format_func=lambda x: {
-                    "gemini-3.5-flash":      "🚀 Gemini 3.5 Flash (Newest, Free)",
-                    "gemini-2.5-flash":      "⚡ Gemini 2.5 Flash (Stable, Free)",
-                    "gemini-2.5-flash-lite": "💡 Gemini 2.5 Flash-Lite (Fastest, Free)",
-                }[x],
-                label_visibility="collapsed"
-            )
-            if not gemini_api_key:
+            if secret_key:
                 st.markdown(
-                    '<div style="color:#f59e0b;font-size:0.75rem;margin-top:4px">'
-                    '🔑 <a href="https://aistudio.google.com/app/apikey" target="_blank" '
-                    'style="color:#4ade80">Get FREE Gemini API key here</a></div>',
+                    '<div style="background:rgba(74,222,128,0.08);border:0.5px solid '
+                    'rgba(74,222,128,0.2);border-radius:6px;padding:5px 8px;font-size:0.72rem;color:#4ade80">'
+                    '🔑 API key loaded automatically ✓</div>',
                     unsafe_allow_html=True
                 )
+            else:
+                gemini_api_key = st.text_input(
+                    "Gemini API Key",
+                    type="password",
+                    placeholder="AIzaSy...",
+                    help="Free key at aistudio.google.com"
+                )
+                if not gemini_api_key:
+                    st.markdown(
+                        '<div style="color:#f59e0b;font-size:0.75rem;margin-top:4px">'
+                        '🔑 <a href="https://aistudio.google.com/app/apikey" target="_blank" '
+                        'style="color:#4ade80">Get FREE Gemini API key here</a></div>',
+                        unsafe_allow_html=True
+                    )
 
         ollama_model = "llama3"
         if ai_mode in ["ollama", "both"]:
@@ -763,7 +1126,6 @@ def main():
                     prompt,
                     ai_mode=ai_mode,
                     gemini_api_key=gemini_api_key,
-                    gemini_model=gemini_model,
                     ollama_model=ollama_model,
                     min_match=min_match,
                     lang=st.session_state.get("lang_sel", "auto")
@@ -775,6 +1137,22 @@ def main():
                         st.markdown(html, unsafe_allow_html=True)
 
                 st.rerun()
+
+    # ── Footer ────────────────────────────────────────────────────────────────
+    st.markdown("""
+    <div style="text-align:center;padding:2.5rem 0 1rem;margin-top:2rem;
+         border-top:1px solid rgba(255,255,255,0.05)">
+        <div style="font-family:'Syne',sans-serif;font-size:1rem;font-weight:700;
+             background:linear-gradient(135deg,#38bdf8,#818cf8);
+             -webkit-background-clip:text;-webkit-text-fill-color:transparent;
+             background-clip:text;margin-bottom:0.3rem">
+            VidSearch AI
+        </div>
+        <div style="color:#334155;font-size:0.75rem;letter-spacing:0.05em">
+            Powered by Gemini AI · Built with Streamlit
+        </div>
+    </div>
+    """, unsafe_allow_html=True)
 
 if __name__ == "__main__":
     main()
