@@ -67,6 +67,20 @@ html, body, [data-testid="stAppViewContainer"], [data-testid="stApp"] {
 [data-testid="stColumn"] > div > div {
     gap: 0 !important;
 }
+/* Remove spacing from element containers */
+div[data-testid="element-container"],
+div.stMarkdown {
+    margin: 0 !important;
+    padding: 0 !important;
+}
+/* But restore padding for actual content elements */
+div[data-testid="element-container"]:has(input),
+div[data-testid="element-container"]:has(button),
+div[data-testid="element-container"]:has(select),
+div[data-testid="element-container"]:has([data-testid="stSelectbox"]),
+div[data-testid="element-container"]:has([data-testid="stSlider"]) {
+    padding: 0.2rem 0.8rem !important;
+}
 
 /* ── Top navbar ── */
 .navbar { display: flex; align-items: center; justify-content: space-between; padding: 0.65rem 1.5rem; border-bottom: 1px solid rgba(255,255,255,0.06); background: rgba(7,9,15,0.95); position: sticky; top: 0; z-index: 100; backdrop-filter: blur(10px); }
@@ -76,8 +90,12 @@ html, body, [data-testid="stAppViewContainer"], [data-testid="stApp"] {
 .nav-badge.green { background: rgba(74,222,128,0.08); border-color: rgba(74,222,128,0.2); color: #4ade80; }
 
 /* ── Layout panels ── */
-.left-panel { padding: 0.8rem 1rem 1rem 1.2rem; border-right: 1px solid rgba(255,255,255,0.05); height: calc(100vh - 48px); overflow-y: auto; display: flex; flex-direction: column; gap: 0.6rem; }
-.right-panel { padding: 0; height: calc(100vh - 48px); display: flex; flex-direction: column; }
+.left-panel { padding: 0.8rem 1rem 1rem 1.2rem; border-right: 1px solid rgba(255,255,255,0.05); overflow-y: auto; display: flex; flex-direction: column; gap: 0.6rem; }
+.right-panel { padding: 0; display: flex; flex-direction: column; }
+
+/* Target Streamlit columns directly for full height */
+[data-testid="stColumn"]:nth-child(1) > div { border-right: 1px solid rgba(255,255,255,0.05); min-height: calc(100vh - 48px); }
+[data-testid="stColumn"]:nth-child(3) > div { min-height: calc(100vh - 48px); }
 
 /* ── Tabs ── */
 .tab-bar { display: flex; border-bottom: 1px solid rgba(255,255,255,0.06); padding: 0 1rem; }
@@ -588,7 +606,7 @@ def get_ai_answer(question, docs, ai_mode, gemini_api_key, ollama_model, lang, g
     return ans, source, error
 
 # ── Build result HTML ─────────────────────────────────────────────────────────
-def build_results(results, video_id, question, ai_mode, gemini_api_key, ollama_model, min_match, lang="auto"):
+def build_results(results, video_id, question, ai_mode, gemini_api_key, ollama_model, min_match, lang="auto", gemini_model="gemini-2.5-flash"):
     # Filter by min_match — fixed score formula
     filtered = []
     for doc, score in results:
@@ -610,7 +628,7 @@ def build_results(results, video_id, question, ai_mode, gemini_api_key, ollama_m
         with st.spinner("🤖 Generating AI answer..."):
             ans, source, error = get_ai_answer(
                 question, [d for d, _ in filtered],
-                ai_mode, gemini_api_key, ollama_model, lang
+                ai_mode, gemini_api_key, ollama_model, lang, gemini_model
             )
         if ans:
             badge_color = "#4ade80" if "Gemini" in (source or "") else "#a78bfa"
@@ -880,6 +898,19 @@ def main():
                             'style="color:#4ade80;font-size:0.75rem">Get FREE key →</a>',
                             unsafe_allow_html=True
                         )
+                # Gemini model selector
+                gemini_model = st.selectbox(
+                    "gemini_model",
+                    ["gemini-2.5-flash", "gemini-2.5-flash-lite"],
+                    format_func=lambda x: {
+                        "gemini-2.5-flash":      "⚡ Gemini 2.5 Flash (Stable, Free)",
+                        "gemini-2.5-flash-lite": "💡 Gemini 2.5 Flash-Lite (Fastest, Free)",
+                    }[x],
+                    label_visibility="collapsed",
+                    key="gemini_model_sel"
+                )
+            else:
+                gemini_model = "gemini-2.5-flash"
             ollama_model = "llama3"
             if ai_mode in ["ollama", "both"]:
                 ollama_model = st.selectbox("model",
@@ -894,6 +925,7 @@ def main():
         # Store settings in session for chat to use
         st.session_state["_ai_mode"]        = ai_mode if "ai_mode" in dir() else "gemini"
         st.session_state["_gemini_api_key"] = gemini_api_key if "gemini_api_key" in dir() else ""
+        st.session_state["_gemini_model"]   = gemini_model if "gemini_model" in dir() else "gemini-2.5-flash"
         st.session_state["_ollama_model"]   = ollama_model if "ollama_model" in dir() else "llama3"
         st.session_state["_min_match"]      = min_match if "min_match" in dir() else 10
 
@@ -976,7 +1008,8 @@ def main():
                     gemini_api_key=_gemini_api_key,
                     ollama_model=_ollama_model,
                     min_match=_min_match,
-                    lang=st.session_state.get("lang_sel", "auto")
+                    lang=st.session_state.get("lang_sel", "auto"),
+                    gemini_model=st.session_state.get("_gemini_model", "gemini-2.5-flash")
                 )
 
                 st.session_state.messages.append({"role": "assistant", "content": plain, "html": html})
