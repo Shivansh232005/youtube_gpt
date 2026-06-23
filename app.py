@@ -26,9 +26,26 @@ html, body, [data-testid="stAppViewContainer"], [data-testid="stApp"] {
 [data-testid="stAppViewContainer"] {
     background: radial-gradient(ellipse 90% 50% at 50% -5%, #0a1628 0%, #07090f 55%) !important;
 }
-#MainMenu, footer, header, [data-testid="stToolbar"],
-[data-testid="stDecoration"], [data-testid="stStatusWidget"] { display: none !important; }
-.block-container { padding: 0 !important; max-width: 100% !important; }
+
+/* ── Remove ALL Streamlit top space ── */
+#MainMenu, footer, [data-testid="stToolbar"],
+[data-testid="stDecoration"], [data-testid="stStatusWidget"],
+[data-testid="stHeader"], header { 
+    display: none !important; 
+    height: 0 !important;
+    min-height: 0 !important;
+}
+[data-testid="stAppViewContainer"] > section:first-child { padding-top: 0 !important; }
+.main > div:first-child { padding-top: 0 !important; }
+.block-container { 
+    padding: 0 !important; 
+    padding-top: 0 !important;
+    margin-top: 0 !important;
+    max-width: 100% !important; 
+}
+/* Force app to stick to top */
+[data-testid="stMain"] { padding-top: 0 !important; }
+[data-testid="stMainBlockContainer"] { padding-top: 0 !important; }
 [data-testid="stHorizontalBlock"] { gap: 0 !important; }
 
 /* ── Top navbar ── */
@@ -495,13 +512,20 @@ USER QUESTION: {question}
 Give a helpful, well-structured answer:"""
 
 # ── Gemini API answer ─────────────────────────────────────────────────────────
-def gemini_answer(question, docs, api_key, lang="auto"):
+def gemini_answer(question, docs, api_key, lang="auto", gemini_model="gemini-2.5-flash"):
     try:
-        import google.generativeai as genai
-        genai.configure(api_key=api_key)
-        model  = genai.GenerativeModel("gemini-1.5-flash")
+        try:
+            from google import genai
+        except ImportError:
+            import subprocess, sys
+            subprocess.check_call([sys.executable, "-m", "pip", "install", "-q", "google-genai"])
+            from google import genai
+        client = genai.Client(api_key=api_key)
         prompt = build_prompt(question, docs, lang)
-        response = model.generate_content(prompt)
+        response = client.models.generate_content(
+            model=gemini_model,
+            contents=prompt,
+        )
         return response.text, "gemini"
     except Exception as e:
         return None, str(e)
@@ -520,18 +544,19 @@ def ollama_answer(question, docs, model_name="llama3", lang="auto"):
         return None, str(e)
 
 # ── Smart AI: Gemini first, Ollama fallback ───────────────────────────────────
-def get_ai_answer(question, docs, ai_mode, gemini_api_key, ollama_model, lang):
+def get_ai_answer(question, docs, ai_mode, gemini_api_key, ollama_model, lang, gemini_model="gemini-2.5-flash"):
     ans, source, error = None, None, None
 
     if ai_mode in ["gemini", "both"]:
-        if gemini_api_key and len(gemini_api_key.strip()) > 10:
-            ans, info = gemini_answer(question, docs, gemini_api_key.strip(), lang)
+        key = gemini_api_key.strip() if gemini_api_key else ""
+        if key and (key.startswith("AIza") or key.startswith("AQ.")):
+            ans, info = gemini_answer(question, docs, key, lang, gemini_model)
             if ans:
-                source = "Gemini 1.5 Flash"
+                source = gemini_model
             else:
                 error = info
         else:
-            error = "Invalid or missing Gemini API key"
+            error = "Invalid or missing Gemini API key (should start with AIza... or AQ...)"
 
     if ans is None and ai_mode in ["ollama", "both"]:
         ans, info = ollama_answer(question, docs, ollama_model, lang)
