@@ -740,9 +740,9 @@ def main():
 
         with tab1:
             st.markdown('<span class="flabel">YouTube URL</span>', unsafe_allow_html=True)
-            url = st.text_input("url", placeholder="https://youtube.com/watch?v=...", label_visibility="collapsed")
+            url = st.text_input("url", placeholder="https://youtube.com/watch?v=...", label_visibility="collapsed", key="url_input")
 
-            if st.button("⚡ Process Video"):
+            if st.button("⚡ Process Video", key="process_btn"):
                 if not url.strip():
                     st.warning("Please enter a YouTube URL.")
                 else:
@@ -789,7 +789,7 @@ def main():
                 "te": "🇮🇳 Telugu",      "bn": "🇧🇩 Bengali",
                 "mr": "🇮🇳 Marathi",
             }
-            lang_sel = st.selectbox("lang", list(lang_map.keys()),
+            lang_sel = st.selectbox("lang", list(lang_map.keys()), key="lang_sel_box",
                                     format_func=lambda x: lang_map[x],
                                     label_visibility="collapsed")
             st.session_state.lang_sel = lang_sel
@@ -807,7 +807,8 @@ def main():
                     "ollama": "💻 Ollama Only (Local)",
                     "none":   "❌ Disabled"
                 }[x],
-                label_visibility="collapsed"
+                label_visibility="collapsed",
+                key="ai_mode_sel"
             )
             # Auto-load from Streamlit secrets if available
             secret_key = st.secrets.get("GEMINI_API_KEY", "") if hasattr(st, "secrets") else ""
@@ -825,7 +826,8 @@ def main():
                     gemini_api_key = st.text_input(
                         "Gemini API Key", type="password",
                         placeholder="AIzaSy...",
-                        help="Free at aistudio.google.com"
+                        help="Free at aistudio.google.com",
+                        key="gemini_key_input"
                     )
                     if not gemini_api_key:
                         st.markdown(
@@ -837,12 +839,12 @@ def main():
             if ai_mode in ["ollama", "both"]:
                 ollama_model = st.selectbox("model",
                     ["llama3", "mistral", "llama3.2", "phi3", "gemma2"],
-                    label_visibility="collapsed")
+                    label_visibility="collapsed", key="ollama_model_sel")
             st.markdown('</div>', unsafe_allow_html=True)
 
             # Min match slider
             st.markdown('<br>', unsafe_allow_html=True)
-            min_match = st.slider("Min match % to show results", 0, 60, 10, 5)
+            min_match = st.slider("Min match % to show results", 0, 60, 10, 5, key="min_match_slider")
 
         # Store settings in session for chat to use
         st.session_state["_ai_mode"]        = ai_mode if "ai_mode" in dir() else "gemini"
@@ -958,201 +960,3 @@ if __name__ == "__main__":
     main()
 
 
-    # Session state init
-    defaults = {
-        "messages":   [],
-        "vectorstore": None,
-        "bm25":        None,
-        "docs":        [],
-        "v_id":        None,
-        "from_cache":  False,
-    }
-    for k, v in defaults.items():
-        if k not in st.session_state:
-            st.session_state[k] = v
-
-    col1, col2 = st.columns([1, 1.65])
-
-    # ── LEFT PANEL ──
-    with col1:
-        st.markdown('<div class="card">', unsafe_allow_html=True)
-        st.markdown('<span class="field-label">YouTube URL</span>', unsafe_allow_html=True)
-        url = st.text_input("url", placeholder="https://youtube.com/watch?v=...", label_visibility="collapsed")
-
-        if st.button("⚡ Process Video"):
-            if not url.strip():
-                st.warning("Please enter a YouTube URL.")
-            else:
-                try:
-                    v_id = extract_video_id(url.strip())
-                except ValueError as e:
-                    st.error(str(e))
-                    v_id = None
-
-                if v_id:
-                    lang_sel = st.session_state.get("lang_sel", "auto")
-                    with st.spinner("Fetching transcript..."):
-                        raw = get_transcript(v_id, lang=lang_sel)
-                    if raw:
-                        with st.spinner("Building search index..."):
-                            docs = process_transcript(raw)
-                            st.session_state.vectorstore = build_vectorstore(docs)
-                            st.session_state.bm25        = build_bm25(docs)
-                            st.session_state.docs        = docs
-                            st.session_state.v_id        = v_id
-                            st.session_state.messages    = []
-
-        if st.session_state.vectorstore:
-            st.markdown('<div class="pill-ready">● Ready to search</div>', unsafe_allow_html=True)
-            if st.session_state.from_cache:
-                st.markdown('<div class="pill-cache">⚡ Loaded from cache</div>', unsafe_allow_html=True)
-        st.markdown("</div>", unsafe_allow_html=True)
-
-        # Language selector
-        st.markdown('<div class="section-box">', unsafe_allow_html=True)
-        st.markdown('<div class="section-label">🌐 Video Language</div>', unsafe_allow_html=True)
-        lang_map = {
-            "auto": "🔍 Auto Detect",
-            "en":   "🇬🇧 English",
-            "hi":   "🇮🇳 Hindi",
-            "gu":   "🇮🇳 Gujarati",
-            "ur":   "🇵🇰 Urdu",
-            "ta":   "🇮🇳 Tamil",
-            "te":   "🇮🇳 Telugu",
-            "bn":   "🇧🇩 Bengali",
-            "mr":   "🇮🇳 Marathi",
-        }
-        lang_sel = st.selectbox("lang", list(lang_map.keys()),
-                                format_func=lambda x: lang_map[x],
-                                label_visibility="collapsed")
-        st.session_state.lang_sel = lang_sel
-        st.markdown("</div>", unsafe_allow_html=True)
-
-        # AI Settings
-        st.markdown('<div class="section-box">', unsafe_allow_html=True)
-        st.markdown('<div class="section-label">🤖 AI Answer Settings</div>', unsafe_allow_html=True)
-
-        ai_mode = st.selectbox(
-            "ai_mode",
-            ["gemini", "both", "ollama", "none"],
-            format_func=lambda x: {
-                "gemini": "✨ Gemini API (Free, Best Quality)",
-                "both":   "🔄 Gemini + Ollama (Gemini first, Ollama fallback)",
-                "ollama": "💻 Ollama Only (Local, No internet)",
-                "none":   "❌ No AI Answer"
-            }[x],
-            label_visibility="collapsed"
-        )
-
-        # Auto-load from Streamlit secrets if available
-        secret_key = st.secrets.get("GEMINI_API_KEY", "") if hasattr(st, "secrets") else ""
-
-        gemini_api_key = secret_key
-        if ai_mode in ["gemini", "both"]:
-            if secret_key:
-                st.markdown(
-                    '<div style="background:rgba(74,222,128,0.08);border:0.5px solid '
-                    'rgba(74,222,128,0.2);border-radius:6px;padding:5px 8px;font-size:0.72rem;color:#4ade80">'
-                    '🔑 API key loaded automatically ✓</div>',
-                    unsafe_allow_html=True
-                )
-            else:
-                gemini_api_key = st.text_input(
-                    "Gemini API Key",
-                    type="password",
-                    placeholder="AIzaSy...",
-                    help="Free key at aistudio.google.com"
-                )
-                if not gemini_api_key:
-                    st.markdown(
-                        '<div style="color:#f59e0b;font-size:0.75rem;margin-top:4px">'
-                        '🔑 <a href="https://aistudio.google.com/app/apikey" target="_blank" '
-                        'style="color:#4ade80">Get FREE Gemini API key here</a></div>',
-                        unsafe_allow_html=True
-                    )
-
-        ollama_model = "llama3"
-        if ai_mode in ["ollama", "both"]:
-            ollama_model = st.selectbox(
-                "model",
-                ["llama3", "mistral", "llama3.2", "phi3", "gemma2"],
-                label_visibility="collapsed"
-            )
-
-        st.markdown("</div>", unsafe_allow_html=True)
-
-        # Min match slider
-        st.markdown("<br>", unsafe_allow_html=True)
-        min_match = st.slider("Min match % to show results", 0, 60, 10, 5)
-
-        # Video preview
-        if st.session_state.v_id:
-            st.video(f"https://www.youtube.com/watch?v={st.session_state.v_id}")
-
-    # ── RIGHT PANEL ──
-    with col2:
-        st.markdown('<div class="chat-label">💬 Ask about the video</div>', unsafe_allow_html=True)
-        chat_area = st.container()
-
-        with chat_area:
-            for m in st.session_state.messages:
-                with st.chat_message(m["role"]):
-                    if m["role"] == "assistant":
-                        st.markdown(m.get("html", m["content"]), unsafe_allow_html=True)
-                    else:
-                        st.markdown(m["content"])
-
-        if prompt := st.chat_input("Ask anything about the video..."):
-            if not st.session_state.vectorstore:
-                st.error("⚠️ Please process a video first.")
-            else:
-                st.session_state.messages.append({"role": "user", "content": prompt})
-                with chat_area:
-                    with st.chat_message("user"):
-                        st.markdown(prompt)
-
-                with st.spinner("Searching..."):
-                    raw_results = hybrid_search(
-                        st.session_state.vectorstore,
-                        st.session_state.bm25,
-                        st.session_state.docs,
-                        prompt, k=8
-                    )
-                    reranked = rerank(prompt, raw_results, top_k=6)
-
-                html, plain = build_results(
-                    reranked,
-                    st.session_state.v_id,
-                    prompt,
-                    ai_mode=ai_mode,
-                    gemini_api_key=gemini_api_key,
-                    ollama_model=ollama_model,
-                    min_match=min_match,
-                    lang=st.session_state.get("lang_sel", "auto")
-                )
-
-                st.session_state.messages.append({"role": "assistant", "content": plain, "html": html})
-                with chat_area:
-                    with st.chat_message("assistant"):
-                        st.markdown(html, unsafe_allow_html=True)
-
-                st.rerun()
-
-    # ── Footer ────────────────────────────────────────────────────────────────
-    st.markdown("""
-    <div style="text-align:center;padding:2.5rem 0 1rem;margin-top:2rem;
-         border-top:1px solid rgba(255,255,255,0.05)">
-        <div style="font-family:'Syne',sans-serif;font-size:1rem;font-weight:700;
-             background:linear-gradient(135deg,#38bdf8,#818cf8);
-             -webkit-background-clip:text;-webkit-text-fill-color:transparent;
-             background-clip:text;margin-bottom:0.3rem">
-            VidSearch AI
-        </div>
-        <div style="color:#334155;font-size:0.75rem;letter-spacing:0.05em">
-            Powered by Gemini AI · Built with Streamlit
-        </div>
-    </div>
-    """, unsafe_allow_html=True)
-
-if __name__ == "__main__":
-    main()
