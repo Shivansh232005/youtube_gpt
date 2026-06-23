@@ -35,18 +35,38 @@ html, body, [data-testid="stAppViewContainer"], [data-testid="stApp"] {
     height: 0 !important;
     min-height: 0 !important;
 }
-[data-testid="stAppViewContainer"] > section:first-child { padding-top: 0 !important; }
-.main > div:first-child { padding-top: 0 !important; }
 .block-container { 
     padding: 0 !important; 
-    padding-top: 0 !important;
     margin-top: 0 !important;
     max-width: 100% !important; 
 }
-/* Force app to stick to top */
-[data-testid="stMain"] { padding-top: 0 !important; }
-[data-testid="stMainBlockContainer"] { padding-top: 0 !important; }
-[data-testid="stHorizontalBlock"] { gap: 0 !important; }
+[data-testid="stMain"],
+[data-testid="stMainBlockContainer"],
+[data-testid="stAppViewContainer"] > section { 
+    padding-top: 0 !important; 
+    margin-top: 0 !important;
+}
+/* Remove ALL column internal padding */
+[data-testid="stColumn"] {
+    padding: 0 !important;
+    margin: 0 !important;
+}
+[data-testid="stVerticalBlock"],
+[data-testid="stVerticalBlockSizeWrapper"] {
+    padding: 0 !important;
+    margin: 0 !important;
+    gap: 0 !important;
+}
+[data-testid="stHorizontalBlock"] {
+    gap: 0 !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    align-items: stretch !important;
+}
+/* Remove element gaps inside panels */
+[data-testid="stColumn"] > div > div {
+    gap: 0 !important;
+}
 
 /* ── Top navbar ── */
 .navbar { display: flex; align-items: center; justify-content: space-between; padding: 0.65rem 1.5rem; border-bottom: 1px solid rgba(255,255,255,0.06); background: rgba(7,9,15,0.95); position: sticky; top: 0; z-index: 100; backdrop-filter: blur(10px); }
@@ -56,8 +76,8 @@ html, body, [data-testid="stAppViewContainer"], [data-testid="stApp"] {
 .nav-badge.green { background: rgba(74,222,128,0.08); border-color: rgba(74,222,128,0.2); color: #4ade80; }
 
 /* ── Layout panels ── */
-.left-panel { padding: 1rem 1rem 1rem 1.2rem; border-right: 1px solid rgba(255,255,255,0.05); height: calc(100vh - 52px); overflow-y: auto; display: flex; flex-direction: column; gap: 0.7rem; }
-.right-panel { padding: 0; height: calc(100vh - 52px); display: flex; flex-direction: column; }
+.left-panel { padding: 0.8rem 1rem 1rem 1.2rem; border-right: 1px solid rgba(255,255,255,0.05); height: calc(100vh - 48px); overflow-y: auto; display: flex; flex-direction: column; gap: 0.6rem; }
+.right-panel { padding: 0; height: calc(100vh - 48px); display: flex; flex-direction: column; }
 
 /* ── Tabs ── */
 .tab-bar { display: flex; border-bottom: 1px solid rgba(255,255,255,0.06); padding: 0 1rem; }
