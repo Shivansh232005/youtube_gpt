@@ -81,10 +81,18 @@ div[data-testid="element-container"]:has([data-testid="stSlider"]) { padding: 0.
 .vs-pill.cyan { background: rgba(6,182,212,0.08); border-color: rgba(6,182,212,0.2); color: #67E8F9; }
 .vs-pill.green { background: rgba(16,185,129,0.08); border-color: rgba(16,185,129,0.2); color: #34D399; }
 
-/* ── Panel layout ── */
-.vs-sidebar { padding: 1rem 0.75rem; border-right: 1px solid rgba(255,255,255,0.05); min-height: calc(100vh - 56px); overflow-y: auto; }
-.vs-main { padding: 1rem 1rem 1rem 1.1rem; min-height: calc(100vh - 56px); }
-.vs-chat { display: flex; flex-direction: column; min-height: calc(100vh - 56px); }
+/* ── Panel layout ──
+   NOTE: these rules now target the REAL Streamlit column containers,
+   not the .vs-sidebar/.vs-main/.vs-chat marker divs. A
+   st.markdown('<div class="...">') opened in one call and closed in a
+   later call does NOT actually wrap the widgets rendered in between —
+   each st.markdown/st.button/etc call creates its own sibling element in
+   the DOM. That left an EMPTY div carrying `min-height: calc(100vh - 56px)`
+   sitting above the real content — that empty box was the big blank gap. */
+[data-testid="stColumn"]:nth-of-type(1) { padding: 1rem 0.75rem !important; border-right: 1px solid rgba(255,255,255,0.05) !important; min-height: calc(100vh - 56px) !important; overflow-y: auto !important; }
+[data-testid="stColumn"]:nth-of-type(2) { padding: 1rem 1rem 1rem 1.1rem !important; min-height: calc(100vh - 56px) !important; }
+[data-testid="stColumn"]:nth-of-type(3) { display: flex !important; flex-direction: column !important; min-height: calc(100vh - 56px) !important; }
+.vs-sidebar, .vs-main, .vs-chat { display: contents; }
 
 /* ── Sidebar history ── */
 .vs-sidebar-brand { font-size: 0.6rem; font-weight: 700; letter-spacing: 0.14em; text-transform: uppercase; color: #1E293B; padding: 0.25rem 0.5rem 0.75rem; display: block; }
