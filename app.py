@@ -223,6 +223,22 @@ div[data-testid="element-container"]:has([data-testid="stSlider"]) { padding: 0.
     .vs-analytics-row { grid-template-columns: repeat(2,1fr); }
     [data-testid="stChatInput"] { margin: 0 0.75rem 0.75rem !important; }
 }
+  .hist-section-date,
+.hist-title,
+.chat-empty,
+.chat-empty *,
+.seg-text,
+.card-description,
+.feature-description,
+.example-chip,
+.try-videos-label,
+.slabel,
+.flabel,
+.vs-muted,
+.vs-subtitle,
+.vs-description {
+    color: #CBD5E1 !important;
+}          
 </style>
 """, unsafe_allow_html=True)
 
