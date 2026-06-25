@@ -23,17 +23,15 @@ st.markdown("""
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
 html, body, [data-testid="stAppViewContainer"], [data-testid="stApp"] {
-    background: #050816 !important;
+    background: #000000 !important;
     color: #F8FAFC !important;
     font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif !important;
 }
 
 [data-testid="stAppViewContainer"] {
     background:
-        radial-gradient(ellipse 80% 60% at 20% -10%, rgba(99,102,241,0.12) 0%, transparent 60%),
-        radial-gradient(ellipse 60% 40% at 80% 10%, rgba(6,182,212,0.08) 0%, transparent 55%),
-        radial-gradient(ellipse 50% 50% at 50% 100%, rgba(99,102,241,0.06) 0%, transparent 60%),
-        #050816 !important;
+        radial-gradient(circle at top, rgba(99,102,241,0.03), transparent 30%),
+        #000000 !important;
 }
 
 /* ── Hide Streamlit chrome ── */
