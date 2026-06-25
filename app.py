@@ -17,161 +17,206 @@ st.set_page_config(page_title="VidSearch AI", page_icon="🎬", layout="wide", i
 # ── CSS ───────────────────────────────────────────────────────────────────────
 st.markdown("""
 <style>
-@import url('https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:wght@300;400;500&display=swap');
-*, *::before, *::after { box-sizing: border-box; margin: 0; }
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+
+/* ── Reset & base ── */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
 html, body, [data-testid="stAppViewContainer"], [data-testid="stApp"] {
-    background: #07090f !important; color: #e2e8f0 !important;
-    font-family: 'DM Sans', sans-serif !important;
-}
-[data-testid="stAppViewContainer"] {
-    background: radial-gradient(ellipse 90% 50% at 50% -5%, #0a1628 0%, #07090f 55%) !important;
+    background: #050816 !important;
+    color: #F8FAFC !important;
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif !important;
 }
 
-/* ── Remove ALL Streamlit top space ── */
+[data-testid="stAppViewContainer"] {
+    background:
+        radial-gradient(ellipse 80% 60% at 20% -10%, rgba(99,102,241,0.12) 0%, transparent 60%),
+        radial-gradient(ellipse 60% 40% at 80% 10%, rgba(6,182,212,0.08) 0%, transparent 55%),
+        radial-gradient(ellipse 50% 50% at 50% 100%, rgba(99,102,241,0.06) 0%, transparent 60%),
+        #050816 !important;
+}
+
+/* ── Hide Streamlit chrome ── */
 #MainMenu, footer, [data-testid="stToolbar"],
 [data-testid="stDecoration"], [data-testid="stStatusWidget"],
-[data-testid="stHeader"], header { 
-    display: none !important; 
-    height: 0 !important;
-    min-height: 0 !important;
+[data-testid="stHeader"], header {
+    display: none !important; height: 0 !important; min-height: 0 !important;
 }
-.block-container { 
-    padding: 0 !important; 
-    margin-top: 0 !important;
-    max-width: 100% !important; 
-}
-[data-testid="stMain"],
-[data-testid="stMainBlockContainer"],
-[data-testid="stAppViewContainer"] > section { 
-    padding-top: 0 !important; 
-    margin-top: 0 !important;
-}
-/* Remove ALL column internal padding */
-[data-testid="stColumn"] {
-    padding: 0 !important;
-    margin: 0 !important;
-}
-[data-testid="stVerticalBlock"],
-[data-testid="stVerticalBlockSizeWrapper"] {
-    padding: 0 !important;
-    margin: 0 !important;
-    gap: 0 !important;
-}
-[data-testid="stHorizontalBlock"] {
-    gap: 0 !important;
-    padding: 0 !important;
-    margin: 0 !important;
-    align-items: stretch !important;
-}
-/* Remove element gaps inside panels */
-[data-testid="stColumn"] > div > div {
-    gap: 0 !important;
-}
-/* Remove spacing from element containers */
-div[data-testid="element-container"],
-div.stMarkdown {
-    margin: 0 !important;
-    padding: 0 !important;
-}
-/* But restore padding for actual content elements */
+.block-container { padding: 0 !important; margin-top: 0 !important; max-width: 100% !important; }
+[data-testid="stMain"], [data-testid="stMainBlockContainer"],
+[data-testid="stAppViewContainer"] > section { padding-top: 0 !important; margin-top: 0 !important; }
+[data-testid="stColumn"] { padding: 0 !important; margin: 0 !important; }
+[data-testid="stVerticalBlock"], [data-testid="stVerticalBlockSizeWrapper"] { padding: 0 !important; margin: 0 !important; gap: 0 !important; }
+[data-testid="stHorizontalBlock"] { gap: 0 !important; padding: 0 !important; margin: 0 !important; align-items: stretch !important; }
+[data-testid="stColumn"] > div > div { gap: 0 !important; }
+div[data-testid="element-container"], div.stMarkdown { margin: 0 !important; padding: 0 !important; }
 div[data-testid="element-container"]:has(input),
 div[data-testid="element-container"]:has(button),
 div[data-testid="element-container"]:has(select),
 div[data-testid="element-container"]:has([data-testid="stSelectbox"]),
-div[data-testid="element-container"]:has([data-testid="stSlider"]) {
-    padding: 0.2rem 0.8rem !important;
+div[data-testid="element-container"]:has([data-testid="stSlider"]) { padding: 0.25rem 1rem !important; }
+
+/* ── Keyframe animations ── */
+@keyframes fadeInUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+@keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+@keyframes float { 0%, 100% { transform: translateY(0px); } 50% { transform: translateY(-8px); } }
+@keyframes gradientShift { 0% { background-position: 0% 50%; } 50% { background-position: 100% 50%; } 100% { background-position: 0% 50%; } }
+@keyframes pulse-glow { 0%, 100% { opacity: 1; } 50% { opacity: 0.5; } }
+@keyframes blob-drift { 0%, 100% { transform: translate(0,0) scale(1); } 33% { transform: translate(20px,-15px) scale(1.05); } 66% { transform: translate(-10px,10px) scale(0.97); } }
+
+/* ── Navbar ── */
+.vs-nav {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 0 2rem; height: 56px;
+    background: rgba(5,8,22,0.85);
+    border-bottom: 1px solid rgba(255,255,255,0.06);
+    backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
+    position: sticky; top: 0; z-index: 200;
 }
+.vs-nav-logo { display: flex; align-items: center; gap: 0.5rem; font-weight: 700; font-size: 0.95rem; letter-spacing: -0.02em; color: #F8FAFC; }
+.vs-nav-logo-icon { width: 28px; height: 28px; background: linear-gradient(135deg,#6366F1,#06B6D4); border-radius: 7px; display: flex; align-items: center; justify-content: center; font-size: 0.75rem; box-shadow: 0 0 16px rgba(99,102,241,0.4); }
+.vs-nav-pills { display: flex; align-items: center; gap: 0.4rem; }
+.vs-pill { font-size: 0.68rem; font-weight: 500; letter-spacing: 0.02em; padding: 0.22rem 0.7rem; border-radius: 100px; background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.08); color: #94A3B8; }
+.vs-pill.indigo { background: rgba(99,102,241,0.1); border-color: rgba(99,102,241,0.25); color: #A5B4FC; }
+.vs-pill.cyan { background: rgba(6,182,212,0.08); border-color: rgba(6,182,212,0.2); color: #67E8F9; }
+.vs-pill.green { background: rgba(16,185,129,0.08); border-color: rgba(16,185,129,0.2); color: #34D399; }
 
-/* ── Top navbar ── */
-.navbar { display: flex; align-items: center; justify-content: space-between; padding: 0.65rem 1.5rem; border-bottom: 1px solid rgba(255,255,255,0.06); background: rgba(7,9,15,0.95); position: sticky; top: 0; z-index: 100; backdrop-filter: blur(10px); }
-.nav-brand { font-family: 'Syne',sans-serif; font-size: 1.15rem; font-weight: 800; background: linear-gradient(135deg,#38bdf8,#818cf8); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; }
-.nav-badges { display: flex; gap: 0.5rem; }
-.nav-badge { background: rgba(56,189,248,0.08); border: 1px solid rgba(56,189,248,0.18); color: #7dd3fc; font-size: 0.62rem; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; padding: 0.2rem 0.7rem; border-radius: 100px; }
-.nav-badge.green { background: rgba(74,222,128,0.08); border-color: rgba(74,222,128,0.2); color: #4ade80; }
+/* ── Panel layout ── */
+.vs-sidebar { padding: 1rem 0.75rem; border-right: 1px solid rgba(255,255,255,0.05); min-height: calc(100vh - 56px); overflow-y: auto; }
+.vs-main { padding: 1rem 1rem 1rem 1.1rem; min-height: calc(100vh - 56px); }
+.vs-chat { display: flex; flex-direction: column; min-height: calc(100vh - 56px); }
 
-/* ── Layout panels ── */
-.left-panel { padding: 0.8rem 1rem 1rem 1.2rem; border-right: 1px solid rgba(255,255,255,0.05); overflow-y: auto; display: flex; flex-direction: column; gap: 0.6rem; }
-.right-panel { padding: 0; display: flex; flex-direction: column; }
+/* ── Sidebar history ── */
+.vs-sidebar-brand { font-size: 0.6rem; font-weight: 700; letter-spacing: 0.14em; text-transform: uppercase; color: #1E293B; padding: 0.25rem 0.5rem 0.75rem; display: block; }
+.vs-hist-section { font-size: 0.58rem; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; color: #1E293B; padding: 0.6rem 0.5rem 0.2rem; display: block; }
+.vs-hist-item { display: flex; align-items: center; gap: 0.4rem; padding: 0.4rem 0.5rem; border-radius: 8px; transition: all 0.15s; margin-bottom: 1px; }
+.vs-hist-item:hover { background: rgba(255,255,255,0.04); }
+.vs-hist-item.active { background: rgba(99,102,241,0.08); border: 1px solid rgba(99,102,241,0.15); }
+.vs-hist-dot { width: 6px; height: 6px; border-radius: 50%; flex-shrink: 0; background: rgba(99,102,241,0.35); }
+.vs-hist-item.active .vs-hist-dot { background: #6366F1; }
+.vs-hist-title { font-size: 0.76rem; color: #475569; font-weight: 400; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; line-height: 1.4; }
+.vs-hist-item.active .vs-hist-title { color: #C7D2FE; }
+.vs-hist-empty { color: #1E293B; font-size: 0.78rem; text-align: center; padding: 2.5rem 0.75rem; line-height: 2; }
 
-/* Target Streamlit columns directly for full height */
-[data-testid="stColumn"]:nth-child(1) > div { border-right: 1px solid rgba(255,255,255,0.05); min-height: calc(100vh - 48px); }
-[data-testid="stColumn"]:nth-child(3) > div { min-height: calc(100vh - 48px); }
+/* ── Hero / empty state ── */
+.vs-hero { padding: 2.5rem 1.5rem 2rem; text-align: center; animation: fadeInUp 0.6s ease both; }
+.vs-hero-badge { display: inline-flex; align-items: center; gap: 0.4rem; background: rgba(99,102,241,0.08); border: 1px solid rgba(99,102,241,0.2); color: #A5B4FC; font-size: 0.68rem; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; padding: 0.3rem 0.8rem; border-radius: 100px; margin-bottom: 1.5rem; }
+.vs-hero-badge-dot { width: 5px; height: 5px; border-radius: 50%; background: #6366F1; animation: pulse-glow 2s ease-in-out infinite; }
+.vs-hero-headline { font-size: clamp(1.5rem, 3vw, 2.2rem); font-weight: 700; letter-spacing: -0.04em; line-height: 1.15; margin-bottom: 1rem; color: #F8FAFC; }
+.vs-hero-gradient-text { background: linear-gradient(135deg,#6366F1 0%,#06B6D4 50%,#A5B4FC 100%); background-size: 200% auto; -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; animation: gradientShift 4s ease infinite; }
+.vs-hero-sub { font-size: 0.88rem; color: #64748B; line-height: 1.7; max-width: 360px; margin: 0 auto 2rem; }
+.vs-feature-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 0.6rem; margin-bottom: 1.5rem; }
+.vs-feature-card { background: rgba(255,255,255,0.02); border: 1px solid rgba(255,255,255,0.06); border-radius: 10px; padding: 0.75rem; text-align: left; transition: all 0.25s; }
+.vs-feature-card:hover { background: rgba(99,102,241,0.05); border-color: rgba(99,102,241,0.2); transform: translateY(-2px); }
+.vs-feature-icon { font-size: 1rem; margin-bottom: 0.35rem; display: block; }
+.vs-feature-title { font-size: 0.73rem; font-weight: 600; color: #E2E8F0; margin-bottom: 0.15rem; }
+.vs-feature-desc { font-size: 0.67rem; color: #475569; line-height: 1.5; }
+.vs-example-urls { display: flex; flex-wrap: wrap; gap: 0.4rem; justify-content: center; margin-top: 0.75rem; }
+.vs-example-url { background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.07); color: #475569; font-size: 0.67rem; padding: 0.25rem 0.65rem; border-radius: 6px; }
+
+/* ── URL & settings sections ── */
+.vs-url-section { background: rgba(255,255,255,0.015); border: 1px solid rgba(255,255,255,0.07); border-radius: 14px; padding: 1.1rem; margin-bottom: 0.75rem; }
+.vs-section-label { font-size: 0.62rem; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase; color: #6366F1; margin-bottom: 0.6rem; display: flex; align-items: center; gap: 0.4rem; }
+.vs-section-label-dot { width: 4px; height: 4px; border-radius: 50%; background: #6366F1; }
+.vs-glass-card { background: rgba(255,255,255,0.02); border: 1px solid rgba(255,255,255,0.07); border-radius: 12px; padding: 0.9rem 1rem; margin-bottom: 0.6rem; }
+.vs-card-label { font-size: 0.6rem; font-weight: 700; letter-spacing: 0.13em; text-transform: uppercase; color: #6366F1; margin-bottom: 0.65rem; display: flex; align-items: center; gap: 0.35rem; }
+
+/* ── Video card ── */
+.vs-video-card { background: rgba(255,255,255,0.02); border: 1px solid rgba(255,255,255,0.07); border-radius: 14px; overflow: hidden; margin-bottom: 0.75rem; }
+.vs-video-info { padding: 0.85rem 1rem; }
+.vs-video-title { font-size: 0.84rem; font-weight: 600; color: #E2E8F0; margin-bottom: 0.3rem; line-height: 1.4; }
+.vs-video-meta { display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap; }
+.vs-video-channel { font-size: 0.72rem; color: #6366F1; font-weight: 500; }
+.vs-video-sep { color: #334155; font-size: 0.65rem; }
+.vs-video-duration { font-size: 0.7rem; color: #64748B; }
+.vs-ready-badge { display: inline-flex; align-items: center; gap: 0.3rem; background: rgba(16,185,129,0.08); border: 1px solid rgba(16,185,129,0.18); color: #10B981; font-size: 0.68rem; font-weight: 600; padding: 0.2rem 0.65rem; border-radius: 100px; margin-top: 0.4rem; }
+.vs-ready-dot { width: 5px; height: 5px; border-radius: 50%; background: #10B981; animation: pulse-glow 2s ease-in-out infinite; }
+.vs-cache-badge { display: inline-flex; align-items: center; gap: 0.3rem; background: rgba(245,158,11,0.08); border: 1px solid rgba(245,158,11,0.2); color: #F59E0B; font-size: 0.68rem; font-weight: 600; padding: 0.18rem 0.6rem; border-radius: 100px; }
+[data-testid="stVideo"] { border-radius: 0 !important; overflow: hidden !important; }
+
+/* ── Analytics cards ── */
+.vs-analytics-row { display: grid; grid-template-columns: repeat(2,1fr); gap: 0.5rem; margin: 0.75rem 0; }
+.vs-stat-card { background: rgba(255,255,255,0.02); border: 1px solid rgba(255,255,255,0.06); border-radius: 10px; padding: 0.75rem; transition: all 0.2s; }
+.vs-stat-card:hover { border-color: rgba(99,102,241,0.2); background: rgba(99,102,241,0.04); }
+.vs-stat-num { font-size: 1.3rem; font-weight: 700; color: #F8FAFC; letter-spacing: -0.03em; }
+.vs-stat-num.indigo { color: #818CF8; }
+.vs-stat-num.cyan { color: #22D3EE; }
+.vs-stat-num.green { color: #34D399; }
+.vs-stat-num.violet { color: #C084FC; }
+.vs-stat-label { font-size: 0.65rem; color: #475569; margin-top: 0.15rem; font-weight: 500; }
+
+/* ── Inputs & buttons ── */
+[data-testid="stTextInput"] > div > div > input { background: rgba(255,255,255,0.04) !important; border: 1px solid rgba(255,255,255,0.08) !important; border-radius: 9px !important; color: #F8FAFC !important; font-size: 0.85rem !important; padding: 0.6rem 1rem !important; transition: all 0.2s !important; }
+[data-testid="stTextInput"] > div > div > input:focus { border-color: rgba(99,102,241,0.4) !important; box-shadow: 0 0 0 3px rgba(99,102,241,0.08) !important; }
+[data-testid="stTextInput"] label { display: none !important; }
+[data-testid="stButton"] > button { width: 100% !important; background: linear-gradient(135deg,#6366F1 0%,#4F46E5 100%) !important; color: white !important; border: none !important; border-radius: 9px !important; padding: 0.65rem 1rem !important; font-family: 'Inter', sans-serif !important; font-size: 0.83rem !important; font-weight: 600 !important; letter-spacing: 0.01em !important; margin-top: 0.4rem !important; transition: all 0.2s !important; box-shadow: 0 4px 16px rgba(99,102,241,0.3) !important; }
+[data-testid="stButton"] > button:hover { transform: translateY(-1px) !important; box-shadow: 0 6px 24px rgba(99,102,241,0.45) !important; filter: brightness(1.05) !important; }
+[data-testid="stButton"] > button:active { transform: translateY(0) !important; }
+[data-testid="stSelectbox"] label { display: none !important; }
+[data-testid="stSelectbox"] > div > div { background: rgba(255,255,255,0.04) !important; border: 1px solid rgba(255,255,255,0.08) !important; border-radius: 9px !important; color: #E2E8F0 !important; font-size: 0.83rem !important; }
+[data-testid="stSlider"] label { color: #475569 !important; font-size: 0.75rem !important; }
 
 /* ── Tabs ── */
-.tab-bar { display: flex; border-bottom: 1px solid rgba(255,255,255,0.06); padding: 0 1rem; }
-.tab-btn { padding: 0.55rem 1rem; font-size: 0.78rem; font-weight: 600; color: #475569; border: none; background: none; cursor: pointer; border-bottom: 2px solid transparent; transition: all 0.2s; font-family: 'Syne',sans-serif; letter-spacing: 0.04em; }
-.tab-btn.active { color: #38bdf8; border-bottom-color: #38bdf8; }
+[data-testid="stTabs"] > div:first-child { border-bottom: 1px solid rgba(255,255,255,0.06) !important; gap: 0 !important; }
+[data-testid="stTabs"] button { font-family: 'Inter', sans-serif !important; font-size: 0.75rem !important; font-weight: 600 !important; color: #475569 !important; padding: 0.5rem 0.9rem !important; letter-spacing: 0.01em !important; border: none !important; border-bottom: 2px solid transparent !important; transition: all 0.2s !important; }
+[data-testid="stTabs"] button[aria-selected="true"] { color: #A5B4FC !important; border-bottom-color: #6366F1 !important; background: transparent !important; }
 
-/* ── Video box ── */
-.video-placeholder { background: rgba(255,255,255,0.02); border: 1px solid rgba(255,255,255,0.07); border-radius: 12px; aspect-ratio: 16/9; display: flex; align-items: center; justify-content: center; color: #1e293b; font-size: 0.8rem; }
-[data-testid="stVideo"] { border-radius: 12px !important; overflow: hidden !important; }
-[data-testid="stVideo"] iframe { border-radius: 12px !important; }
+/* ── Chat ── */
+.vs-chat-header { padding: 0.85rem 1.25rem; border-bottom: 1px solid rgba(255,255,255,0.05); display: flex; align-items: center; justify-content: space-between; }
+.vs-chat-title { font-size: 0.68rem; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; color: #334155; }
+.vs-chat-model-badge { font-size: 0.65rem; font-weight: 500; color: #6366F1; display: flex; align-items: center; gap: 0.3rem; }
+.vs-chat-model-dot { width: 5px; height: 5px; border-radius: 50%; background: #6366F1; }
+[data-testid="stChatMessage"] { background: transparent !important; border: none !important; padding: 0 !important; margin-bottom: 0.75rem !important; animation: fadeInUp 0.3s ease both !important; }
+[data-testid="stChatMessage"]:has([data-testid="chatAvatarIcon-user"]) { background: rgba(99,102,241,0.06) !important; border: 1px solid rgba(99,102,241,0.12) !important; border-radius: 12px !important; padding: 0.75rem 1rem !important; }
+[data-testid="stChatMessage"]:has([data-testid="chatAvatarIcon-assistant"]) { background: rgba(255,255,255,0.02) !important; border: 1px solid rgba(255,255,255,0.05) !important; border-radius: 12px !important; padding: 0.75rem 1rem !important; }
+[data-testid="stChatMessage"] p { color: #E2E8F0 !important; font-size: 0.87rem !important; line-height: 1.75 !important; }
+[data-testid="stChatInput"] { background: rgba(255,255,255,0.03) !important; border: 1px solid rgba(255,255,255,0.08) !important; border-radius: 12px !important; margin: 0 1.25rem 1rem !important; }
+[data-testid="stChatInput"] textarea { color: #E2E8F0 !important; font-size: 0.87rem !important; }
+.vs-chat-empty { display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100%; min-height: 280px; padding: 2.5rem 2rem; text-align: center; animation: fadeIn 0.5s ease both; }
+.vs-chat-empty-ring { width: 54px; height: 54px; border-radius: 50%; border: 1px solid rgba(99,102,241,0.2); display: flex; align-items: center; justify-content: center; font-size: 1.3rem; margin-bottom: 1rem; background: rgba(99,102,241,0.05); animation: float 4s ease-in-out infinite; }
+.vs-chat-empty-title { font-size: 0.88rem; font-weight: 600; color: #334155; margin-bottom: 0.35rem; }
+.vs-chat-empty-sub { font-size: 0.76rem; color: #1E293B; line-height: 1.6; }
 
-/* ── Section boxes ── */
-.sbox { background: rgba(99,102,241,0.05); border: 1px solid rgba(99,102,241,0.12); border-radius: 10px; padding: 0.75rem 0.9rem; }
-.slabel { font-family: 'Syne',sans-serif; font-size: 0.62rem; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase; color: #818cf8; margin-bottom: 0.45rem; display: block; }
-.flabel { font-family: 'Syne',sans-serif; font-size: 0.62rem; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase; color: #38bdf8; margin-bottom: 0.35rem; display: block; }
+/* ── AI answer & segments ── */
+.vs-ai-box { background: linear-gradient(135deg,rgba(16,185,129,0.05) 0%,rgba(6,182,212,0.03) 100%); border: 1px solid rgba(16,185,129,0.15); border-radius: 12px; padding: 1rem 1.1rem; margin-bottom: 0.8rem; }
+.vs-ai-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 0.6rem; }
+.vs-ai-label { font-size: 0.6rem; font-weight: 700; letter-spacing: 0.14em; text-transform: uppercase; color: #10B981; display: flex; align-items: center; gap: 0.4rem; }
+.vs-ai-source { font-size: 0.62rem; font-weight: 500; padding: 0.1rem 0.5rem; border-radius: 5px; background: rgba(16,185,129,0.08); border: 1px solid rgba(16,185,129,0.2); color: #34D399; }
+.vs-ai-text { color: #CBD5E1; font-size: 0.87rem; line-height: 1.8; }
+.vs-segs-header { font-size: 0.6rem; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase; color: #334155; padding-bottom: 0.5rem; border-bottom: 1px solid rgba(255,255,255,0.04); margin-bottom: 0.65rem; }
+.vs-seg-card { background: rgba(255,255,255,0.015); border: 1px solid rgba(255,255,255,0.05); border-left: 2px solid rgba(6,182,212,0.4); border-radius: 0 10px 10px 0; padding: 0.75rem 0.9rem; margin-bottom: 0.5rem; transition: all 0.2s; }
+.vs-seg-card:hover { border-color: rgba(6,182,212,0.3); background: rgba(6,182,212,0.03); }
+.vs-seg-meta { display: flex; align-items: center; gap: 0.4rem; margin-bottom: 0.35rem; flex-wrap: wrap; }
+.vs-seg-num { font-size: 0.58rem; font-weight: 700; color: #1E293B; text-transform: uppercase; }
+.vs-ts-pill { background: rgba(6,182,212,0.08); border: 1px solid rgba(6,182,212,0.18); color: #22D3EE; font-size: 0.65rem; font-weight: 500; padding: 0.1rem 0.55rem; border-radius: 5px; text-decoration: none; }
+.vs-ts-pill:hover { background: rgba(6,182,212,0.18); }
+.vs-match-high { background: rgba(16,185,129,0.08); border: 1px solid rgba(16,185,129,0.18); color: #34D399; font-size: 0.62rem; font-weight: 600; padding: 0.1rem 0.5rem; border-radius: 5px; }
+.vs-match-mid { background: rgba(245,158,11,0.08); border: 1px solid rgba(245,158,11,0.18); color: #FBBF24; font-size: 0.62rem; font-weight: 600; padding: 0.1rem 0.5rem; border-radius: 5px; }
+.vs-match-low { background: rgba(239,68,68,0.08); border: 1px solid rgba(239,68,68,0.15); color: #F87171; font-size: 0.62rem; font-weight: 600; padding: 0.1rem 0.5rem; border-radius: 5px; }
+.vs-seg-text { color: #475569; font-size: 0.82rem; line-height: 1.7; }
+.vs-video-placeholder { background: rgba(255,255,255,0.015); border: 1px solid rgba(255,255,255,0.06); border-radius: 12px; aspect-ratio: 16/9; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 0.4rem; }
+.vs-placeholder-icon { font-size: 1.8rem; opacity: 0.35; animation: float 4s ease-in-out infinite; }
+.vs-placeholder-text { font-size: 0.75rem; color: #1E293B; }
 
-/* ── Process btn & inputs ── */
-[data-testid="stTextInput"] > div > div > input { background: rgba(255,255,255,0.04) !important; border: 1px solid rgba(255,255,255,0.09) !important; border-radius: 8px !important; color: #e2e8f0 !important; font-size: 0.85rem !important; padding: 0.55rem 0.9rem !important; }
-[data-testid="stTextInput"] > div > div > input:focus { border-color: rgba(56,189,248,0.4) !important; box-shadow: 0 0 0 3px rgba(56,189,248,0.06) !important; }
-[data-testid="stTextInput"] label { display: none !important; }
-[data-testid="stButton"] > button { width: 100% !important; background: linear-gradient(135deg,#0ea5e9,#6366f1) !important; color: white !important; border: none !important; border-radius: 8px !important; padding: 0.6rem 1rem !important; font-family: 'Syne',sans-serif !important; font-size: 0.82rem !important; font-weight: 700 !important; letter-spacing: 0.06em !important; margin-top: 0.35rem !important; }
-[data-testid="stButton"] > button:hover { filter: brightness(1.1) !important; }
-.pill-ready { display: inline-flex; align-items: center; gap: 0.3rem; background: rgba(16,185,129,0.1); border: 1px solid rgba(16,185,129,0.2); color: #10b981; font-size: 0.7rem; padding: 0.2rem 0.6rem; border-radius: 100px; margin-top: 0.4rem; }
-.pill-cache { display: inline-flex; align-items: center; gap: 0.3rem; background: rgba(245,158,11,0.1); border: 1px solid rgba(245,158,11,0.2); color: #f59e0b; font-size: 0.7rem; padding: 0.2rem 0.6rem; border-radius: 100px; }
-[data-testid="stSelectbox"] label { display: none !important; }
-[data-testid="stSelectbox"] > div > div { background: rgba(255,255,255,0.04) !important; border: 1px solid rgba(255,255,255,0.08) !important; border-radius: 8px !important; color: #e2e8f0 !important; }
-[data-testid="stSlider"] label { color: #64748b !important; font-size: 0.78rem !important; }
-
-/* ── History sidebar — ChatGPT style ── */
-.hist-panel-label { font-size: 0.6rem; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase; color: #334155; padding: 0.5rem 0.6rem 0.4rem; display: block; }
-.hist-section-date { font-size: 0.6rem; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: #1e293b; padding: 0.5rem 0.6rem 0.2rem; display: block; }
-.hist-item { display: block; padding: 0.4rem 0.6rem; border-radius: 7px; cursor: pointer; transition: background 0.15s; margin-bottom: 1px; text-decoration: none; }
-.hist-item:hover { background: rgba(255,255,255,0.05); }
-.hist-item.active { background: rgba(56,189,248,0.07); }
-.hist-title { font-size: 0.78rem; color: #94a3b8; font-weight: 400; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; line-height: 1.4; }
-.hist-item.active .hist-title { color: #e2e8f0; }
-.hist-empty { color: #1e293b; font-size: 0.78rem; text-align: center; padding: 2rem 0.5rem; line-height: 1.8; }
-
-/* ── Chat area ── */
-.chat-scroll { flex: 1; overflow-y: auto; padding: 1rem 1.2rem; }
-[data-testid="stChatMessage"] { background: transparent !important; border: none !important; padding: 0 !important; margin-bottom: 0.8rem !important; }
-[data-testid="stChatMessage"]:has([data-testid="chatAvatarIcon-user"]) { background: rgba(14,165,233,0.07) !important; border: 1px solid rgba(14,165,233,0.12) !important; border-radius: 11px !important; padding: 0.7rem 1rem !important; }
-[data-testid="stChatMessage"]:has([data-testid="chatAvatarIcon-assistant"]) { background: rgba(255,255,255,0.02) !important; border: 1px solid rgba(255,255,255,0.05) !important; border-radius: 11px !important; padding: 0.7rem 1rem !important; }
-[data-testid="stChatMessage"] p { color: #e2e8f0 !important; font-size: 0.88rem !important; line-height: 1.7 !important; }
-[data-testid="stChatInput"] { background: rgba(255,255,255,0.03) !important; border: 1px solid rgba(255,255,255,0.08) !important; border-radius: 10px !important; margin: 0 1rem 0.8rem !important; }
-[data-testid="stChatInput"] textarea { color: #e2e8f0 !important; }
-.chat-empty { color: #1e293b; font-size: 0.9rem; text-align: center; padding: 3rem 2rem; }
-.chat-empty-icon { font-size: 2.5rem; margin-bottom: 0.8rem; }
-
-/* ── AI answer box ── */
-.ai-box { background: linear-gradient(135deg,rgba(74,222,128,0.06),rgba(14,165,233,0.03)); border: 1px solid rgba(74,222,128,0.18); border-radius: 12px; padding: 1rem 1.1rem; margin-bottom: 0.8rem; }
-.ai-label { font-family: 'Syne',sans-serif; font-size: 0.6rem; font-weight: 700; letter-spacing: 0.14em; text-transform: uppercase; color: #4ade80; margin-bottom: 0.45rem; display: flex; align-items: center; gap: 0.45rem; }
-.ai-badge { background: rgba(74,222,128,0.1); border: 1px solid rgba(74,222,128,0.2); color: #4ade80; font-size: 0.6rem; padding: 0.1rem 0.5rem; border-radius: 100px; }
-.ai-text { color: #cbd5e1; font-size: 0.88rem; line-height: 1.8; }
-
-/* ── Segment cite tags (Perplexity style) ── */
-.cite-tag { display: inline-flex; align-items: center; gap: 3px; background: rgba(14,165,233,0.1); border: 1px solid rgba(14,165,233,0.2); color: #38bdf8; font-size: 0.65rem; font-weight: 600; padding: 0.05rem 0.45rem; border-radius: 4px; cursor: pointer; text-decoration: none; vertical-align: middle; margin: 0 2px; }
-.cite-tag:hover { background: rgba(14,165,233,0.2); }
-
-/* ── Segment cards ── */
-.seg-section { margin-top: 0.6rem; border-top: 1px solid rgba(255,255,255,0.05); padding-top: 0.6rem; }
-.seg-header { font-family: 'Syne',sans-serif; font-size: 0.6rem; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase; color: #334155; margin-bottom: 0.5rem; }
-.seg-card { background: rgba(255,255,255,0.02); border: 1px solid rgba(255,255,255,0.05); border-left: 2px solid rgba(14,165,233,0.5); border-radius: 0 10px 10px 0; padding: 0.7rem 0.9rem; margin-bottom: 0.5rem; }
-.seg-meta { display: flex; align-items: center; gap: 0.4rem; margin-bottom: 0.35rem; flex-wrap: wrap; }
-.seg-num { font-family: 'Syne',sans-serif; font-size: 0.58rem; font-weight: 700; color: #334155; text-transform: uppercase; }
-.ts-pill { background: rgba(14,165,233,0.1); border: 1px solid rgba(14,165,233,0.2); color: #38bdf8; font-size: 0.65rem; font-weight: 500; padding: 0.1rem 0.5rem; border-radius: 5px; text-decoration: none; }
-.ts-pill:hover { background: rgba(14,165,233,0.2); }
-.match-high { background: rgba(16,185,129,0.1); border: 1px solid rgba(16,185,129,0.2); color: #34d399; font-size: 0.62rem; font-weight: 600; padding: 0.1rem 0.5rem; border-radius: 5px; }
-.match-mid  { background: rgba(245,158,11,0.1); border: 1px solid rgba(245,158,11,0.2); color: #fbbf24; font-size: 0.62rem; font-weight: 600; padding: 0.1rem 0.5rem; border-radius: 5px; }
-.match-low  { background: rgba(239,68,68,0.1); border: 1px solid rgba(239,68,68,0.18); color: #f87171; font-size: 0.62rem; font-weight: 600; padding: 0.1rem 0.5rem; border-radius: 5px; }
-.seg-text { color: #64748b; font-size: 0.82rem; line-height: 1.7; }
+/* ── Cite tags ── */
+.cite-tag { display: inline-flex; align-items: center; gap: 3px; background: rgba(6,182,212,0.08); border: 1px solid rgba(6,182,212,0.18); color: #22D3EE; font-size: 0.65rem; font-weight: 600; padding: 0.05rem 0.45rem; border-radius: 4px; cursor: pointer; text-decoration: none; vertical-align: middle; margin: 0 2px; }
+.cite-tag:hover { background: rgba(6,182,212,0.18); }
 
 /* ── Misc ── */
-[data-testid="stProgress"] > div > div { background: linear-gradient(90deg,#0ea5e9,#6366f1) !important; }
-::-webkit-scrollbar { width: 3px; } ::-webkit-scrollbar-track { background: transparent; } ::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.07); border-radius: 10px; }
-[data-testid="stAlert"] { border-radius: 8px !important; font-size: 0.83rem !important; }
+[data-testid="stProgress"] > div > div { background: linear-gradient(90deg,#6366F1,#06B6D4) !important; border-radius: 100px !important; }
+[data-testid="stAlert"] { border-radius: 10px !important; font-size: 0.83rem !important; }
+::-webkit-scrollbar { width: 3px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.06); border-radius: 10px; }
+::-webkit-scrollbar-thumb:hover { background: rgba(99,102,241,0.3); }
+
+@media (max-width: 768px) {
+    .vs-nav { padding: 0 1rem; }
+    .vs-hero-headline { font-size: 1.4rem; }
+    .vs-feature-grid { grid-template-columns: 1fr; }
+    .vs-analytics-row { grid-template-columns: repeat(2,1fr); }
+    [data-testid="stChatInput"] { margin: 0 0.75rem 0.75rem !important; }
+}
 </style>
 """, unsafe_allow_html=True)
 
@@ -551,6 +596,7 @@ Give a helpful, well-structured answer:"""
 
 # ── Gemini API answer ─────────────────────────────────────────────────────────
 def gemini_answer(question, docs, api_key, lang="auto", gemini_model="gemini-2.5-flash"):
+    import time
     try:
         try:
             from google import genai
@@ -558,13 +604,35 @@ def gemini_answer(question, docs, api_key, lang="auto", gemini_model="gemini-2.5
             import subprocess, sys
             subprocess.check_call([sys.executable, "-m", "pip", "install", "-q", "google-genai"])
             from google import genai
+
         client = genai.Client(api_key=api_key)
         prompt = build_prompt(question, docs, lang)
-        response = client.models.generate_content(
-            model=gemini_model,
-            contents=prompt,
-        )
-        return response.text, "gemini"
+
+        # Retry logic: 3 attempts with backoff, fallback to lite model on 503
+        models_to_try = [gemini_model]
+        if gemini_model != "gemini-2.5-flash-lite":
+            models_to_try.append("gemini-2.5-flash-lite")  # fallback
+
+        last_error = ""
+        for attempt, model in enumerate(models_to_try):
+            for retry in range(3):
+                try:
+                    response = client.models.generate_content(
+                        model=model,
+                        contents=prompt,
+                    )
+                    label = model + (" (fallback)" if attempt > 0 else "")
+                    return response.text, label
+                except Exception as e:
+                    last_error = str(e)
+                    if "503" in last_error or "UNAVAILABLE" in last_error or "high demand" in last_error:
+                        if retry < 2:
+                            time.sleep(2 ** retry)  # 1s, 2s wait
+                            continue
+                        break  # try fallback model
+                    return None, last_error  # non-503 error, don't retry
+
+        return None, f"Gemini overloaded — try again in a moment. ({last_error[:80]})"
     except Exception as e:
         return None, str(e)
 
@@ -622,7 +690,7 @@ def build_results(results, video_id, question, ai_mode, gemini_api_key, ollama_m
             msg = "No segments found. Try a different question or lower the Min Match % slider."
             return msg, msg
 
-    # AI answer
+    # AI answer — premium redesign
     ai_html, ai_plain = "", ""
     if ai_mode != "none":
         with st.spinner("🤖 Generating AI answer..."):
@@ -631,22 +699,24 @@ def build_results(results, video_id, question, ai_mode, gemini_api_key, ollama_m
                 ai_mode, gemini_api_key, ollama_model, lang, gemini_model
             )
         if ans:
-            badge_color = "#4ade80" if "Gemini" in (source or "") else "#a78bfa"
+            source_label = source or "AI"
             ai_html  = (
-                f'<div class="ai-box">'
-                f'<div class="ai-label">🤖 AI Answer '
-                f'<span style="color:{badge_color};font-size:0.6rem;margin-left:6px">▶ {source}</span>'
+                f'<div class="vs-ai-box">'
+                f'<div class="vs-ai-header">'
+                f'<div class="vs-ai-label">🤖 AI Answer</div>'
+                f'<span class="vs-ai-source">▶ {source_label}</span>'
                 f'</div>'
-                f'<div class="ai-text">{ans}</div>'
+                f'<div class="vs-ai-text">{ans}</div>'
                 f'</div>'
             )
-            ai_plain = f"**AI Answer ({source}):**\n{ans}\n\n"
+            ai_plain = f"**AI Answer ({source_label}):**\n{ans}\n\n"
         elif error:
-            ai_html  = f'<div style="color:#f87171;font-size:0.8rem;margin-bottom:0.7rem">⚠️ AI Error: {error[:120]}</div>'
+            ai_html  = f'<div style="color:#F87171;font-size:0.8rem;margin-bottom:0.7rem;padding:0.6rem 0.8rem;background:rgba(239,68,68,0.06);border:1px solid rgba(239,68,68,0.15);border-radius:8px">⚠️ {error[:120]}</div>'
             ai_plain = f"AI Error: {error[:120]}\n\n"
 
-    # Segment cards
-    html  = ai_html + f'<div style="font-family:Syne,sans-serif;font-size:0.65rem;font-weight:700;letter-spacing:0.12em;text-transform:uppercase;color:#475569;padding-bottom:0.5rem;border-bottom:1px solid rgba(255,255,255,0.05);margin-bottom:0.7rem">📍 {len(filtered)} Relevant Segments</div>'
+
+    # Segment cards — premium redesign
+    html  = ai_html + f'<div class="vs-segs-header">📍 {len(filtered)} Relevant Segments</div>'
     plain = ai_plain + f"**{len(filtered)} relevant segments:**\n"
 
     for i, (doc, rel) in enumerate(filtered, 1):
@@ -655,34 +725,38 @@ def build_results(results, video_id, question, ai_mode, gemini_api_key, ollama_m
         yt_url   = f"https://www.youtube.com/watch?v={video_id}&t={start_s}s"
         text     = doc.page_content
 
-        if rel >= 60:   mc = "match-high"; icon = "↑"
-        elif rel >= 35: mc = "match-mid";  icon = "~"
-        else:           mc = "match-low";  icon = "↓"
+        if rel >= 60:   mc = "vs-match-high"; icon = "↑"
+        elif rel >= 35: mc = "vs-match-mid";  icon = "~"
+        else:           mc = "vs-match-low";  icon = "↓"
 
         html += (
-            f'<div class="seg-card">'
-            f'<div class="seg-meta">'
-            f'<span class="seg-num">#{i}</span>'
-            f'<a class="ts-pill" href="{yt_url}" target="_blank">⏱ {ts}</a>'
+            f'<div class="vs-seg-card">'
+            f'<div class="vs-seg-meta">'
+            f'<span class="vs-seg-num">#{i}</span>'
+            f'<a class="vs-ts-pill" href="{yt_url}" target="_blank">⏱ {ts}</a>'
             f'<span class="{mc}">{icon} {rel:.0f}%</span>'
             f'</div>'
-            f'<div class="seg-text">{text}</div>'
+            f'<div class="vs-seg-text">{text}</div>'
             f'</div>'
         )
         plain += f"\n**{i}. [{ts}]** ({rel:.0f}%)\n{text}\n"
 
+
     return html, plain
 
-# ── MAIN ──────────────────────────────────────────────────────────────────────
+# ── MAIN ─────────────────────────────────────────────────────────────────────
 def main():
-    # ── Navbar ────────────────────────────────────────────────────────────────
+    # ── Premium Navbar ────────────────────────────────────────────────────────
     st.markdown("""
-    <div class="navbar">
-        <div class="nav-brand">🎬 VidSearch AI</div>
-        <div class="nav-badges">
-            <span class="nav-badge">⚡ Gemini AI</span>
-            <span class="nav-badge">🔍 Semantic Search</span>
-            <span class="nav-badge green">● Free</span>
+    <div class="vs-nav">
+        <div class="vs-nav-logo">
+            <div class="vs-nav-logo-icon">🎬</div>
+            VidSearch AI
+        </div>
+        <div class="vs-nav-pills">
+            <span class="vs-pill indigo">⚡ Gemini AI</span>
+            <span class="vs-pill cyan">🔍 Semantic Search</span>
+            <span class="vs-pill green">● Free</span>
         </div>
     </div>
     """, unsafe_allow_html=True)
@@ -702,19 +776,24 @@ def main():
         if k not in st.session_state:
             st.session_state[k] = v
 
-    # ── 3-column layout: History | Video+Setup | Chat ─────────────────────────
+    # ── 3-column layout ───────────────────────────────────────────────────────
     hist_col, left_col, right_col = st.columns([0.85, 1.4, 2], gap="small")
 
     # ══════════════════════════════════════════════════════════════════════════
     # HISTORY SIDEBAR
     # ══════════════════════════════════════════════════════════════════════════
     with hist_col:
-        st.markdown('<div class="left-panel">', unsafe_allow_html=True)
-        st.markdown('<span class="hist-panel-label">VidSearch AI</span>', unsafe_allow_html=True)
+        st.markdown('<div class="vs-sidebar">', unsafe_allow_html=True)
+        st.markdown('<span class="vs-sidebar-brand">VidSearch AI</span>', unsafe_allow_html=True)
 
         history = load_history()
         if not history:
-            st.markdown('<div class="hist-empty">No history yet.<br>Process a video to get started.</div>', unsafe_allow_html=True)
+            st.markdown("""
+            <div class="vs-hist-empty">
+                <div style="font-size:1.4rem;opacity:0.25;margin-bottom:0.5rem">🎬</div>
+                No history yet.<br>Process a video to begin.
+            </div>
+            """, unsafe_allow_html=True)
         else:
             if st.button("🗑", key="clear_hist", help="Clear all history"):
                 try:
@@ -743,22 +822,18 @@ def main():
             for grp_name in ["Today", "Yesterday", "Older"]:
                 if grp_name not in groups:
                     continue
-                st.markdown(f'<span class="hist-section-date">{grp_name}</span>', unsafe_allow_html=True)
+                st.markdown(f'<span class="vs-hist-section">{grp_name}</span>', unsafe_allow_html=True)
 
                 for i, h in enumerate(groups[grp_name]):
                     vid    = h.get("video_id", "")
                     title  = h.get("title", vid)
                     is_active = vid == st.session_state.get("v_id", "")
-
-                    if "youtube.com" in title or "youtu.be" in title:
-                        display = vid
-                    else:
-                        display = title
-
+                    display = vid if ("youtube.com" in title or "youtu.be" in title) else title
                     active_cls = "active" if is_active else ""
                     st.markdown(f"""
-                    <div class="hist-item {active_cls}">
-                        <div class="hist-title">🎬 {display[:38]}{"…" if len(display)>38 else ""}</div>
+                    <div class="vs-hist-item {active_cls}">
+                        <div class="vs-hist-dot"></div>
+                        <div class="vs-hist-title">{display[:36]}{"…" if len(display)>36 else ""}</div>
                     </div>
                     """, unsafe_allow_html=True)
 
@@ -778,31 +853,108 @@ def main():
         st.markdown('</div>', unsafe_allow_html=True)
 
     # ══════════════════════════════════════════════════════════════════════════
-    # LEFT PANEL — Video Player + Tabbed Setup/Settings
+    # LEFT PANEL — Video + Setup + Settings
     # ══════════════════════════════════════════════════════════════════════════
     with left_col:
-        st.markdown('<div class="left-panel">', unsafe_allow_html=True)
+        st.markdown('<div class="vs-main">', unsafe_allow_html=True)
 
-        # ── Embedded YouTube player ──────────────────────────────────────────
+        # ── Video display or hero ──────────────────────────────────────────
         if st.session_state.v_id:
+            # Video card with embed
+            st.markdown('<div class="vs-video-card">', unsafe_allow_html=True)
             st.video(f"https://www.youtube.com/watch?v={st.session_state.v_id}")
+            st.markdown(f"""
+            <div class="vs-video-info">
+                <div class="vs-video-title">🎬 Video Loaded</div>
+                <div class="vs-video-meta">
+                    <span class="vs-video-channel">youtube.com</span>
+                    <span class="vs-video-sep">·</span>
+                    <span class="vs-video-duration">ID: {st.session_state.v_id}</span>
+                </div>
+            </div>
+            """, unsafe_allow_html=True)
+            st.markdown('</div>', unsafe_allow_html=True)
+
             if st.session_state.from_cache:
-                st.markdown('<div class="pill-cache">⚡ Loaded from cache</div>', unsafe_allow_html=True)
+                st.markdown('<div class="vs-cache-badge">⚡ Loaded from cache</div>', unsafe_allow_html=True)
+
+            # Analytics cards
+            if st.session_state.docs:
+                n_chunks   = len(st.session_state.docs)
+                n_trans    = sum(len(d.page_content.split()) for d in st.session_state.docs)
+                ai_mode_label = st.session_state.get("_ai_mode", "gemini").title()
+                st.markdown(f"""
+                <div class="vs-analytics-row">
+                    <div class="vs-stat-card">
+                        <div class="vs-stat-num indigo">{n_trans:,}</div>
+                        <div class="vs-stat-label">Words indexed</div>
+                    </div>
+                    <div class="vs-stat-card">
+                        <div class="vs-stat-num cyan">{n_chunks}</div>
+                        <div class="vs-stat-label">Chunks built</div>
+                    </div>
+                    <div class="vs-stat-card">
+                        <div class="vs-stat-num green">✓</div>
+                        <div class="vs-stat-label">Vector index</div>
+                    </div>
+                    <div class="vs-stat-card">
+                        <div class="vs-stat-num violet">{ai_mode_label}</div>
+                        <div class="vs-stat-label">AI mode</div>
+                    </div>
+                </div>
+                """, unsafe_allow_html=True)
         else:
+            # Hero / empty state
             st.markdown("""
-            <div class="video-placeholder">
-                <div style="text-align:center">
-                    <div style="font-size:2rem;margin-bottom:0.5rem">🎬</div>
-                    <div style="color:#334155;font-size:0.8rem">Video will appear here after processing</div>
+            <div class="vs-hero">
+                <div class="vs-hero-badge">
+                    <div class="vs-hero-badge-dot"></div>
+                    AI-Powered · Free · No Signup
+                </div>
+                <div class="vs-hero-headline">
+                    Chat With Any<br>
+                    <span class="vs-hero-gradient-text">YouTube Video</span>
+                </div>
+                <div class="vs-hero-sub">
+                    Paste any YouTube URL. Ask questions. Get instant answers with timestamps.
+                </div>
+                <div class="vs-feature-grid">
+                    <div class="vs-feature-card">
+                        <span class="vs-feature-icon">🔍</span>
+                        <div class="vs-feature-title">Hybrid Search</div>
+                        <div class="vs-feature-desc">Semantic + BM25 retrieval for best results</div>
+                    </div>
+                    <div class="vs-feature-card">
+                        <span class="vs-feature-icon">🤖</span>
+                        <div class="vs-feature-title">Gemini AI</div>
+                        <div class="vs-feature-desc">Powered by Google's latest models</div>
+                    </div>
+                    <div class="vs-feature-card">
+                        <span class="vs-feature-icon">⏱</span>
+                        <div class="vs-feature-title">Timestamps</div>
+                        <div class="vs-feature-desc">Jump directly to relevant moments</div>
+                    </div>
+                    <div class="vs-feature-card">
+                        <span class="vs-feature-icon">🌐</span>
+                        <div class="vs-feature-title">Multilingual</div>
+                        <div class="vs-feature-desc">Hindi, English, and 7 more languages</div>
+                    </div>
+                </div>
+                <div style="font-size:0.65rem;color:#1E293B;margin-bottom:0.4rem;font-weight:600;letter-spacing:0.08em;text-transform:uppercase">Try these videos</div>
+                <div class="vs-example-urls">
+                    <span class="vs-example-url">youtube.com/watch?v=dQw4w9WgXcQ</span>
+                    <span class="vs-example-url">youtu.be/...</span>
+                    <span class="vs-example-url">YouTube Shorts</span>
                 </div>
             </div>
             """, unsafe_allow_html=True)
 
-        # ── Tabs: Video Setup | Settings ────────────────────────────────────
+        # ── Tabs: Video Setup | Settings ──────────────────────────────────
         tab1, tab2 = st.tabs(["⚙️ Video Setup", "🛠 Settings"])
 
         with tab1:
-            st.markdown('<span class="flabel">YouTube URL</span>', unsafe_allow_html=True)
+            st.markdown('<div class="vs-url-section">', unsafe_allow_html=True)
+            st.markdown('<div class="vs-section-label"><div class="vs-section-label-dot"></div>YouTube URL</div>', unsafe_allow_html=True)
             url = st.text_input("url", placeholder="https://youtube.com/watch?v=...", label_visibility="collapsed", key="url_input")
 
             if st.button("⚡ Process Video", key="process_btn"):
@@ -828,7 +980,6 @@ def main():
                                 st.session_state.v_id        = v_id
                                 st.session_state.messages    = []
 
-                            # Save to history
                             import datetime
                             save_history({
                                 "video_id":  v_id,
@@ -839,12 +990,13 @@ def main():
                             st.rerun()
 
             if st.session_state.vectorstore:
-                st.markdown('<div class="pill-ready">● Ready to search</div>', unsafe_allow_html=True)
+                st.markdown('<div class="vs-ready-badge"><div class="vs-ready-dot"></div>Ready to search</div>', unsafe_allow_html=True)
+            st.markdown('</div>', unsafe_allow_html=True)
 
         with tab2:
-            # Language
-            st.markdown('<div class="sbox">', unsafe_allow_html=True)
-            st.markdown('<span class="slabel">🌐 Video Language</span>', unsafe_allow_html=True)
+            # Language glass card
+            st.markdown('<div class="vs-glass-card">', unsafe_allow_html=True)
+            st.markdown('<div class="vs-card-label">🌐 Video Language</div>', unsafe_allow_html=True)
             lang_map = {
                 "auto": "🔍 Auto Detect", "en": "🇬🇧 English",
                 "hi": "🇮🇳 Hindi",       "gu": "🇮🇳 Gujarati",
@@ -858,9 +1010,9 @@ def main():
             st.session_state.lang_sel = lang_sel
             st.markdown('</div>', unsafe_allow_html=True)
 
-            # AI Settings
-            st.markdown('<div class="sbox" style="margin-top:0.6rem">', unsafe_allow_html=True)
-            st.markdown('<span class="slabel">🤖 AI Model</span>', unsafe_allow_html=True)
+            # AI Settings glass card
+            st.markdown('<div class="vs-glass-card">', unsafe_allow_html=True)
+            st.markdown('<div class="vs-card-label">🤖 AI Model</div>', unsafe_allow_html=True)
             ai_mode = st.selectbox(
                 "ai_mode",
                 ["gemini", "both", "ollama", "none"],
@@ -873,15 +1025,13 @@ def main():
                 label_visibility="collapsed",
                 key="ai_mode_sel"
             )
-            # Auto-load from Streamlit secrets if available
             secret_key = st.secrets.get("GEMINI_API_KEY", "") if hasattr(st, "secrets") else ""
-
-            gemini_api_key = secret_key  # default to secret
+            gemini_api_key = secret_key
             if ai_mode in ["gemini", "both"]:
                 if secret_key:
                     st.markdown(
-                        '<div style="background:rgba(74,222,128,0.08);border:0.5px solid '
-                        'rgba(74,222,128,0.2);border-radius:6px;padding:5px 8px;font-size:0.72rem;color:#4ade80;margin-bottom:8px">'
+                        '<div style="background:rgba(16,185,129,0.06);border:1px solid rgba(16,185,129,0.15);'
+                        'border-radius:8px;padding:6px 10px;font-size:0.72rem;color:#34D399;margin-top:0.4rem">'
                         '🔑 API key loaded automatically ✓</div>',
                         unsafe_allow_html=True
                     )
@@ -895,11 +1045,11 @@ def main():
                     if not gemini_api_key:
                         st.markdown(
                             '🔑 <a href="https://aistudio.google.com/app/apikey" target="_blank" '
-                            'style="color:#4ade80;font-size:0.75rem">Get FREE key →</a>',
+                            'style="color:#6366F1;font-size:0.75rem;text-decoration:none">Get FREE Gemini key →</a>',
                             unsafe_allow_html=True
                         )
                 # Gemini model selector
-                st.markdown('<span class="slabel">🧠 Gemini Model</span>', unsafe_allow_html=True)
+                st.markdown('<div class="vs-card-label" style="margin-top:0.7rem">🧠 Gemini Model</div>', unsafe_allow_html=True)
                 gemini_model = st.selectbox(
                     "gemini_model",
                     ["gemini-2.5-flash", "gemini-2.5-flash-lite"],
@@ -923,32 +1073,29 @@ def main():
             st.markdown('<br>', unsafe_allow_html=True)
             min_match = st.slider("Min match % to show results", 0, 60, 10, 5, key="min_match_slider")
 
-        # Store settings in session for chat to use
+        # Store settings in session
         st.session_state["_ai_mode"]        = ai_mode if "ai_mode" in dir() else "gemini"
         st.session_state["_gemini_api_key"] = gemini_api_key if "gemini_api_key" in dir() else ""
         st.session_state["_gemini_model"]   = gemini_model if "gemini_model" in dir() else "gemini-2.5-flash"
         st.session_state["_ollama_model"]   = ollama_model if "ollama_model" in dir() else "llama3"
         st.session_state["_min_match"]      = min_match if "min_match" in dir() else 10
 
-        st.markdown('</div>', unsafe_allow_html=True)
+        st.markdown('</div>', unsafe_allow_html=True)  # vs-main
 
     # ══════════════════════════════════════════════════════════════════════════
     # RIGHT PANEL — Chat
     # ══════════════════════════════════════════════════════════════════════════
     with right_col:
-        st.markdown('<div class="right-panel">', unsafe_allow_html=True)
-        st.markdown('<div class="chat-scroll">', unsafe_allow_html=True)
+        st.markdown('<div class="vs-chat">', unsafe_allow_html=True)
 
         # Chat header
-        st.markdown("""
-        <div style="display:flex;align-items:center;justify-content:space-between;
-             padding-bottom:0.6rem;border-bottom:1px solid rgba(255,255,255,0.05);margin-bottom:0.8rem">
-            <span style="font-family:'Syne',sans-serif;font-size:0.65rem;font-weight:700;
-                  letter-spacing:0.12em;text-transform:uppercase;color:#475569">
-                💬 Ask About The Video
-            </span>
-            <span style="font-size:0.65rem;color:#1e293b">
-                Powered by Gemini 1.5 Flash
+        ai_mode_display = st.session_state.get("_ai_mode", "gemini").title()
+        st.markdown(f"""
+        <div class="vs-chat-header">
+            <span class="vs-chat-title">💬 Ask About The Video</span>
+            <span class="vs-chat-model-badge">
+                <span class="vs-chat-model-dot"></span>
+                {ai_mode_display}
             </span>
         </div>
         """, unsafe_allow_html=True)
@@ -958,11 +1105,11 @@ def main():
         with chat_area:
             if not st.session_state.messages:
                 st.markdown("""
-                <div class="chat-empty">
-                    <div class="chat-empty-icon">🎯</div>
-                    <div style="color:#334155;font-size:0.9rem;font-weight:600">Process a video to start</div>
-                    <div style="color:#1e293b;font-size:0.78rem;margin-top:0.5rem">
-                        Paste a YouTube URL → Process → Ask anything!
+                <div class="vs-chat-empty">
+                    <div class="vs-chat-empty-ring">🎯</div>
+                    <div class="vs-chat-empty-title">Process a video to start</div>
+                    <div class="vs-chat-empty-sub">
+                        Paste a YouTube URL in the panel<br>to the left, then ask anything.
                     </div>
                 </div>
                 """, unsafe_allow_html=True)
@@ -981,7 +1128,6 @@ def main():
             if not st.session_state.vectorstore:
                 st.error("⚠️ Please process a video first.")
             else:
-                # Retrieve settings from session
                 _ai_mode        = st.session_state.get("_ai_mode", "gemini")
                 _gemini_api_key = st.session_state.get("_gemini_api_key", "")
                 _ollama_model   = st.session_state.get("_ollama_model", "llama3")
@@ -1018,7 +1164,7 @@ def main():
                     with st.chat_message("assistant"):
                         st.markdown(html, unsafe_allow_html=True)
 
-                # Update history with last query
+                # Update history
                 if st.session_state.v_id:
                     history = load_history()
                     for h in history:
